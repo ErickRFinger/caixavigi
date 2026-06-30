@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Caixa VIGI — Sistema Financeiro</title>
   <meta name="description" content="Sistema de controle de caixa para Carol, Camili e Keithi." />
+  <link rel="icon" type="image/png" href="vigi.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
@@ -32,6 +33,60 @@
       --shadow:    0 8px 32px rgba(0,0,0,0.45);
       --shadow-sm: 0 2px 10px rgba(0,0,0,0.3);
     }
+
+    /* ===== TEMA CLARO ===== */
+    body.light {
+      --bg:        #f0f2f8;
+      --surface:   #ffffff;
+      --glass:     rgba(255,255,255,0.75);
+      --border:    rgba(0,0,0,0.1);
+      --text:      #1e2235;
+      --text-muted:#64748b;
+      --shadow:    0 8px 32px rgba(0,0,0,0.12);
+      --shadow-sm: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    body.light .orb { opacity: 0.07; }
+    body.light .header {
+      background: rgba(240,242,248,0.92);
+      border-bottom-color: rgba(0,0,0,0.1);
+    }
+    body.light .modal { background: #ffffff; }
+    body.light .report-content { background: rgba(0,0,0,0.04); color: #475569; }
+    body.light .confirm-box { background: #ffffff; }
+    body.light select option { background: #ffffff; color: #1e2235; }
+    body.light input, body.light select {
+      background: rgba(0,0,0,0.04);
+      color: #1e2235;
+    }
+    body.light .toast { background: #ffffff; }
+    body.light .cal-day:hover:not(.cal-empty):not(.cal-other) {
+      background: rgba(0,0,0,0.06);
+    }
+    body.light .btn-ghost {
+      background: rgba(0,0,0,0.06); color: #1e2235;
+    }
+    body.light .btn-ghost:hover { background: rgba(0,0,0,0.1); }
+
+    /* Smooth theme transition */
+    *, *::before, *::after {
+      transition: background-color 0.25s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    /* Don't animate transforms (breaks animations) */
+    .action-btn, .card, .btn, .cal-day, .tx-item {
+      transition: background-color 0.25s ease, border-color 0.2s ease,
+                  color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Theme toggle button */
+    .btn-theme {
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--glass); color: var(--text);
+      cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease; flex-shrink: 0;
+    }
+    .btn-theme:hover { background: rgba(124,92,252,0.18); border-color: var(--primary); }
 
     body {
       font-family: 'Inter', sans-serif;
@@ -94,12 +149,24 @@
       margin-bottom: 32px;
     }
     .login-logo .logo-icon {
-      width: 70px; height: 70px;
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      border-radius: 20px;
+      width: 120px; height: 120px;
+      background: #fff;
+      border-radius: 28px;
       display: inline-flex; align-items: center; justify-content: center;
-      font-size: 32px; margin-bottom: 14px;
-      box-shadow: 0 8px 24px rgba(124,92,252,0.4);
+      margin-bottom: 20px; overflow: hidden;
+      box-shadow:
+        0 0 0 4px rgba(124,92,252,0.25),
+        0 0 0 8px rgba(124,92,252,0.1),
+        0 16px 40px rgba(124,92,252,0.4),
+        0 4px 12px rgba(0,0,0,0.4);
+      animation: logoFloat 3.5s ease-in-out infinite;
+    }
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0px); box-shadow: 0 0 0 4px rgba(124,92,252,0.25), 0 0 0 8px rgba(124,92,252,0.1), 0 16px 40px rgba(124,92,252,0.4), 0 4px 12px rgba(0,0,0,0.4); }
+      50%       { transform: translateY(-6px); box-shadow: 0 0 0 4px rgba(124,92,252,0.35), 0 0 0 10px rgba(124,92,252,0.12), 0 24px 50px rgba(124,92,252,0.5), 0 8px 20px rgba(0,0,0,0.35); }
+    }
+    .login-logo .logo-icon img {
+      width: 100%; height: 100%; object-fit: contain; display: block;
     }
     .login-logo h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
     .login-logo p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
@@ -122,10 +189,32 @@
       transition: all 0.2s ease;
     }
     .user-btn .avatar {
-      width: 40px; height: 40px; border-radius: 50%;
+      width: 54px; height: 54px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 1.2rem; margin: 0 auto 8px;
       background: linear-gradient(135deg, #7c5cfc44, #9d7cff44);
+      overflow: hidden; border: 2px solid rgba(124,92,252,0.3);
+    }
+    .user-btn .avatar img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .user-btn:hover .avatar, .user-btn.selected .avatar {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(124,92,252,0.3);
+    }
+
+    /* Header avatar photo */
+    .header-avatar-img {
+      width: 28px; height: 28px; border-radius: 50%;
+      object-fit: cover; display: block;
+      border: 2px solid rgba(124,92,252,0.5);
+    }
+
+    /* User chip photo */
+    .chip-photo {
+      width: 16px; height: 16px; border-radius: 50%;
+      object-fit: cover; display: block;
+      border: 1px solid rgba(255,255,255,0.2);
     }
     .user-btn:hover, .user-btn.selected {
       border-color: var(--primary); background: rgba(124,92,252,0.15);
@@ -682,15 +771,83 @@
     .btn-clear-day:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
 
     /* ===========================
-       RESPONSIVE
+       RESPONSIVE — MOBILE FIRST
     =========================== */
-    @media (max-width: 600px) {
-      .login-card { padding: 32px 22px; }
-      .header { padding: 0 16px; }
-      .main { padding: 20px 16px; }
-      .action-btn { min-width: 130px; padding: 16px 18px; font-size: 0.92rem; }
-      .card-value { font-size: 1.4rem; }
+
+    /* Header: hide subtitle on small, shrink header-right */
+    @media (max-width: 640px) {
+      .header { padding: 0 14px; height: 58px; }
+      .header-title { font-size: 0.9rem; }
       .header-subtitle { display: none; }
+      .header-logo { width: 32px; height: 32px; border-radius: 8px; }
+      .header-logo img { width: 32px; height: 32px; border-radius: 8px; }
+      .user-badge { padding: 4px 10px 4px 6px; font-size: 0.75rem; }
+      .btn.btn-ghost.btn-sm { padding: 6px 8px; font-size: 0.8rem; }
+    }
+
+    /* Main padding */
+    @media (max-width: 640px) {
+      .main { padding: 16px 14px; }
+    }
+
+    /* Login card */
+    @media (max-width: 480px) {
+      .login-card { padding: 28px 18px; }
+      .login-logo h1 { font-size: 1.3rem; }
+    }
+
+    /* Cards grid: 2 cols on tablet, 1 col on mobile */
+    @media (max-width: 640px) {
+      .cards-grid { grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+      .card { padding: 16px; }
+      .card-value { font-size: 1.2rem; }
+      .card-icon { width: 36px; height: 36px; font-size: 16px; }
+    }
+    @media (max-width: 360px) {
+      .cards-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Action buttons: stack on very small */
+    @media (max-width: 640px) {
+      .action-section { gap: 10px; margin-bottom: 20px; }
+      .action-btn { flex: 1; min-width: 0; padding: 14px 12px; font-size: 0.88rem; }
+      .action-btn .icon { font-size: 1.1rem; }
+    }
+
+    /* Calendar: force single column on mobile */
+    @media (max-width: 640px) {
+      .calendar-wrapper { grid-template-columns: 1fr !important; }
+      .calendar-card { padding: 16px; }
+      .cal-day { font-size: 0.75rem; border-radius: 7px; }
+      .cal-weekday { font-size: 0.6rem; }
+      .cal-dot { width: 4px; height: 4px; }
+      .day-summary-card { padding: 16px; }
+    }
+
+    /* History items: wrap on mobile */
+    @media (max-width: 540px) {
+      .tx-item { flex-wrap: wrap; gap: 8px; padding: 12px 14px; }
+      .tx-info { min-width: 0; flex: 1 1 60%; }
+      .tx-amount { flex: 0 0 auto; }
+      .user-chip { order: 3; }
+      .tx-actions { order: 4; opacity: 1; }
+    }
+
+    /* Filter buttons: scroll horizontally */
+    @media (max-width: 540px) {
+      .filter-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+      .filter-btn { flex-shrink: 0; }
+      .section-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    }
+
+    /* Modals: full-width on mobile */
+    @media (max-width: 480px) {
+      .modal { padding: 22px 18px; border-radius: 18px 18px 0 0; }
+      .modal-overlay { align-items: flex-end; padding: 0; }
+      .modal-overlay .modal { max-width: 100%; border-radius: 22px 22px 0 0; }
+      .value-preview { font-size: 1.5rem; padding: 14px; }
+      .confirm-box { border-radius: 22px 22px 0 0; }
+      .confirm-overlay { align-items: flex-end; padding: 0; }
     }
   </style>
 </head>
@@ -709,7 +866,9 @@
 <div id="login-screen" class="screen active">
   <div class="login-card">
     <div class="login-logo">
-      <div class="logo-icon">💰</div>
+      <div class="logo-icon">
+        <img src="vigi.png" alt="VIGI" />
+      </div>
       <h1>Caixa VIGI</h1>
       <p>Sistema de Controle Financeiro</p>
     </div>
@@ -718,15 +877,15 @@
       <label>Selecione sua conta</label>
       <div class="user-select">
         <button class="user-btn" id="u-carol" onclick="selectUser('Carol')">
-          <div class="avatar">👩‍💼</div>
+          <div class="avatar"><img src="CAROL.jpeg" alt="Carol" onerror="this.style.display='none';this.parentNode.textContent='👩‍💼'" /></div>
           Carol
         </button>
         <button class="user-btn" id="u-camili" onclick="selectUser('Camili')">
-          <div class="avatar">👩‍💻</div>
+          <div class="avatar"><img src="CAMILI.jpeg" alt="Camili" onerror="this.style.display='none';this.parentNode.textContent='👩‍💻'" /></div>
           Camili
         </button>
         <button class="user-btn" id="u-keithi" onclick="selectUser('Keithi')">
-          <div class="avatar">👩‍🎨</div>
+          <div class="avatar"><img src="KEITHI.jpeg" alt="Keithi" onerror="this.style.display='none';this.parentNode.textContent='👩‍🎨'" /></div>
           Keithi
         </button>
       </div>
@@ -754,7 +913,7 @@
   <!-- HEADER -->
   <header class="header">
     <div class="header-left">
-      <div class="header-logo">💰</div>
+      <img src="vigi.png" alt="VIGI" style="height:44px;width:auto;display:block;flex-shrink:0;" />
       <div>
         <div class="header-title">Caixa VIGI</div>
         <div class="header-subtitle" id="header-date"></div>
@@ -763,10 +922,11 @@
     <div class="header-right">
       <div class="user-badge">
         <div class="dot"></div>
-        <div class="user-avatar-sm" id="header-avatar"></div>
+        <div class="user-avatar-sm" id="header-avatar" style="width:28px;height:28px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--primary),var(--primary2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;"></div>
         <span id="header-username"></span>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="openReport()" title="Relatório">📊</button>
+      <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Alternar tema">🌙</button>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()" title="Sair">🚪</button>
     </div>
   </header>
@@ -1064,6 +1224,10 @@ let selectedDate = null; // 'DD/MM/YYYY' string
 =========================== */
 window.addEventListener('DOMContentLoaded', () => {
   loadTransactions();
+  // Load saved theme
+  const savedTheme = localStorage.getItem('caixavigi_theme') || 'dark';
+  applyTheme(savedTheme);
+
   const session = localStorage.getItem(SESSION_KEY);
   if (session) {
     currentUser = session;
@@ -1071,6 +1235,27 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   updateHeaderDate();
 });
+
+/* ===========================
+   THEME
+=========================== */
+function applyTheme(theme) {
+  if (theme === 'light') {
+    document.body.classList.add('light');
+    const btn = document.getElementById('btn-theme');
+    if (btn) btn.textContent = '☀️';
+  } else {
+    document.body.classList.remove('light');
+    const btn = document.getElementById('btn-theme');
+    if (btn) btn.textContent = '🌙';
+  }
+  localStorage.setItem('caixavigi_theme', theme);
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.contains('light');
+  applyTheme(isLight ? 'dark' : 'light');
+}
 
 function updateHeaderDate() {
   const el = document.getElementById('header-date');
@@ -1132,9 +1317,16 @@ function doLogout() {
 function showApp() {
   document.getElementById('login-screen').classList.remove('active');
   document.getElementById('app-screen').classList.add('active');
-  // set header
+  // Header: name + photo
   document.getElementById('header-username').textContent = currentUser;
-  document.getElementById('header-avatar').textContent = currentUser[0].toUpperCase();
+  const photoMap = { Carol: 'CAROL.jpeg', Camili: 'CAMILI.jpeg', Keithi: 'KEITHI.jpeg' };
+  const photo = photoMap[currentUser];
+  const avatarEl = document.getElementById('header-avatar');
+  if (photo) {
+    avatarEl.innerHTML = `<img src="${photo}" alt="${currentUser}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentNode.textContent='${currentUser[0].toUpperCase()}'" />`;
+  } else {
+    avatarEl.textContent = currentUser[0].toUpperCase();
+  }
   updateHeaderDate();
   renderAll();
 }
@@ -1254,9 +1446,15 @@ function renderHistory() {
     return;
   }
 
+  const photoMap = { Carol: 'CAROL.jpeg', Camili: 'CAMILI.jpeg', Keithi: 'KEITHI.jpeg' };
+
   list.innerHTML = filtered.map(t => {
-    const userKey = t.user ? t.user.toLowerCase() : 'carol';
+    const userKey     = t.user ? t.user.toLowerCase() : 'carol';
     const userInitial = t.user ? t.user[0].toUpperCase() : '?';
+    const userPhoto   = photoMap[t.user] || null;
+    const chipInner   = userPhoto
+      ? `<img src="${userPhoto}" alt="${escHtml(t.user)}" class="chip-photo" onerror="this.outerHTML='<span class=chip-dot>${userInitial}</span>'" />`
+      : `<span class="chip-dot">${userInitial}</span>`;
     return `
     <div class="tx-item" id="tx-${t.id}">
       <div class="tx-dot ${t.type}">${t.type === 'entry' ? '📈' : '📉'}</div>
@@ -1269,7 +1467,7 @@ function renderHistory() {
       </div>
       <div class="tx-amount ${t.type}">${t.type === 'entry' ? '+' : '-'}${fmt(t.value)}</div>
       <span class="user-chip ${userKey}">
-        <span class="chip-dot">${userInitial}</span>
+        ${chipInner}
         ${escHtml(t.user)}
       </span>
       <div class="tx-actions">
@@ -1279,6 +1477,7 @@ function renderHistory() {
     </div>
   `;
   }).join('');
+
 }
 
 function renderAll() {
