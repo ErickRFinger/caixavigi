@@ -850,6 +850,7 @@
       .confirm-overlay { align-items: flex-end; padding: 0; }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -1206,8 +1207,12 @@ const USERS = {
   'Camili': { pass: 'clic3369', emoji: 'K' },
   'Keithi': { pass: 'clic3369', emoji: 'K' },
 };
-const STORAGE_KEY = 'caixavigi_transactions';
 const SESSION_KEY = 'caixavigi_session';
+
+// Supabase Configuration
+const SUPABASE_URL = "https://oxbgbzrdtzhubdmyskvk.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94YmdienJkdHpodWJkbXlza3ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTQ2MTEsImV4cCI6MjA5ODQzMDYxMX0.VMzYEzWscDMTjqj2HmWESskC33Gk9NzcWiXaThReGlU";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let transactions = [];
@@ -1223,7 +1228,6 @@ let selectedDate = null; // 'DD/MM/YYYY' string
    INIT
 =========================== */
 window.addEventListener('DOMContentLoaded', () => {
-  loadTransactions();
   // Load saved theme
   const savedTheme = localStorage.getItem('caixavigi_theme') || 'dark';
   applyTheme(savedTheme);
@@ -1328,27 +1332,72 @@ function showApp() {
     avatarEl.textContent = currentUser[0].toUpperCase();
   }
   updateHeaderDate();
-  renderAll();
+  loadTransactions();
 }
 
 /* ===========================
    TRANSACTIONS
 =========================== */
-function loadTransactions() {
+/* ===========================
+   SUPABASE MAPPING HELPERS
+=========================== */
+function mapTxToDb(tx) {
+  return {
+    id: String(tx.id),
+    type: tx.type,
+    value: parseFloat(tx.value),
+    desc_text: tx.desc,
+    category: tx.cat,
+    observation: tx.obs || '',
+    username: tx.user,
+    created_at: tx.date,
+    date_str: tx.dateStr,
+    time_str: tx.timeStr
+  };
+}
+
+function mapDbToTx(db) {
+  return {
+    id: db.id,
+    type: db.type,
+    value: parseFloat(db.value),
+    desc: db.desc_text,
+    cat: db.category,
+    obs: db.observation,
+    user: db.username,
+    date: db.created_at,
+    dateStr: db.date_str,
+    timeStr: db.time_str
+  };
+}
+
+async function loadTransactions() {
   try {
-    transactions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch(e) { transactions = []; }
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    transactions = (data || []).map(mapDbToTx);
+  } catch(e) {
+    console.error("Erro ao carregar transações do Supabase:", e);
+    showToast("Erro ao conectar com a nuvem.", "error");
+    transactions = [];
+  }
+  renderAll();
 }
 
 function saveTransactions() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+  // No-op: saved directly to database in real time
 }
 
-function addTransaction(type, value, desc, cat, obs) {
+async function addTransaction(type, value, desc, cat, obs) {
   const now = new Date();
   const tx = {
-    id: Date.now() + Math.random(),
-    type,       // 'entry' | 'exit'
+    id: String(Date.now() + Math.random()),
+    type,
     value: parseFloat(value),
     desc: desc.trim() || (type === 'entry' ? 'Entrada' : 'Saída'),
     cat,
@@ -1358,20 +1407,43 @@ function addTransaction(type, value, desc, cat, obs) {
     dateStr: now.toLocaleDateString('pt-BR'),
     timeStr: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
   };
-  transactions.unshift(tx);
-  saveTransactions();
-  renderAll();
-  showToast(
-    type === 'entry' ? 'Entrada registrada com sucesso!' : 'Saída registrada com sucesso!',
-    type === 'entry' ? 'success' : 'error'
-  );
+
+  try {
+    const dbRow = mapTxToDb(tx);
+    const { error } = await supabase
+      .from('transactions')
+      .insert([dbRow]);
+    
+    if (error) throw error;
+
+    transactions.unshift(tx);
+    renderAll();
+    showToast(
+      type === 'entry' ? 'Entrada registrada com sucesso!' : 'Saída registrada com sucesso!',
+      type === 'entry' ? 'success' : 'error'
+    );
+  } catch (e) {
+    console.error("Erro ao salvar transação no Supabase:", e);
+    showToast("Erro ao salvar lançamento na nuvem.", "error");
+  }
 }
 
-function deleteTransaction(id) {
-  transactions = transactions.filter(t => t.id !== id);
-  saveTransactions();
-  renderAll();
-  showToast('Lançamento excluído.', 'error');
+async function deleteTransaction(id) {
+  try {
+    const { error } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', String(id));
+      
+    if (error) throw error;
+
+    transactions = transactions.filter(t => String(t.id) !== String(id));
+    renderAll();
+    showToast('Lançamento excluído.', 'error');
+  } catch (e) {
+    console.error("Erro ao excluir transação no Supabase:", e);
+    showToast("Erro ao excluir lançamento na nuvem.", "error");
+  }
 }
 
 /* ===========================
@@ -1701,10 +1773,10 @@ function submitExit() {
    EDIT TRANSACTION
 =========================== */
 function openEditModal(id) {
-  const t = transactions.find(tx => tx.id === id);
+  const t = transactions.find(tx => String(tx.id) === String(id));
   if (!t) return;
 
-  document.getElementById('edit-tx-id').value  = id;
+  document.getElementById('edit-tx-id').value  = t.id;
   document.getElementById('edit-value').value  = t.value;
   document.getElementById('edit-desc').value   = t.desc;
   document.getElementById('edit-obs').value    = t.obs || '';
@@ -1740,16 +1812,15 @@ function updateEditPreview() {
   document.getElementById('edit-preview').textContent = fmt(val);
 }
 
-function submitEdit() {
-  const idRaw = document.getElementById('edit-tx-id').value;
-  const id    = parseFloat(idRaw);
-  const idx   = transactions.findIndex(tx => tx.id === id);
+async function submitEdit() {
+  const id  = document.getElementById('edit-tx-id').value;
+  const idx = transactions.findIndex(tx => String(tx.id) === String(id));
   if (idx === -1) { showToast('Lançamento não encontrado.', 'error'); return; }
 
   const val = parseFloat(document.getElementById('edit-value').value);
   if (!val || val <= 0) { showToast('Digite um valor válido.', 'error'); return; }
 
-  const t = transactions[idx];
+  const t = { ...transactions[idx] };
   t.value = val;
   t.desc  = document.getElementById('edit-desc').value.trim() || t.desc;
   t.obs   = document.getElementById('edit-obs').value.trim();
@@ -1762,10 +1833,23 @@ function submitEdit() {
     t.cat = 'Saída';
   }
 
-  saveTransactions();
-  renderAll();
-  closeModal('edit');
-  showToast('Lançamento atualizado com sucesso!', 'success');
+  try {
+    const dbRow = mapTxToDb(t);
+    const { error } = await supabase
+      .from('transactions')
+      .update(dbRow)
+      .eq('id', String(id));
+
+    if (error) throw error;
+
+    transactions[idx] = t;
+    renderAll();
+    closeModal('edit');
+    showToast('Lançamento atualizado com sucesso!', 'success');
+  } catch (e) {
+    console.error("Erro ao atualizar transação no Supabase:", e);
+    showToast("Erro ao salvar alterações na nuvem.", "error");
+  }
 }
 
 /* Close modals on overlay click */
