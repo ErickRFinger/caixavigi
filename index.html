@@ -1213,15 +1213,15 @@ const SESSION_KEY = 'caixavigi_session';
 const SUPABASE_URL = "https://oxbgbzrdtzhubdmyskvk.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94YmdienJkdHpodWJkbXlza3ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTQ2MTEsImV4cCI6MjA5ODQzMDYxMX0.VMzYEzWscDMTjqj2HmWESskC33Gk9NzcWiXaThReGlU";
 
-let supabase = null;
+let supabaseClient = null;
 let useCloud = false;
 
 try {
-  if (typeof window.supabase !== 'undefined') {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     useCloud = true;
-  } else if (typeof supabase !== 'undefined') {
-    supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } else if (typeof supabase !== 'undefined' && supabase.createClient) {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     useCloud = true;
   }
 } catch (err) {
@@ -1386,9 +1386,9 @@ function mapDbToTx(db) {
 }
 
 async function loadTransactions() {
-  if (useCloud && supabase) {
+  if (useCloud && supabaseClient) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('transactions')
         .select('*')
         .order('created_at', { ascending: false });
@@ -1440,10 +1440,10 @@ async function addTransaction(type, value, desc, cat, obs) {
     timeStr: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
   };
 
-  if (useCloud && supabase) {
+  if (useCloud && supabaseClient) {
     try {
       const dbRow = mapTxToDb(tx);
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('transactions')
         .insert([dbRow]);
       
@@ -1473,9 +1473,9 @@ async function addTransaction(type, value, desc, cat, obs) {
 }
 
 async function deleteTransaction(id) {
-  if (useCloud && supabase) {
+  if (useCloud && supabaseClient) {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('transactions')
         .delete()
         .eq('id', String(id));
@@ -1886,10 +1886,10 @@ async function submitEdit() {
     t.cat = 'Saída';
   }
 
-  if (useCloud && supabase) {
+  if (useCloud && supabaseClient) {
     try {
       const dbRow = mapTxToDb(t);
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('transactions')
         .update(dbRow)
         .eq('id', String(id));
