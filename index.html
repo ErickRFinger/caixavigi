@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caixa VIGI — Sistema Financeiro</title>
+  <meta name="description" content="Sistema de controle de caixa para Carol, Camili e Keithi." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ===========================
+       RESET & TOKENS
+    =========================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f18;
+      --surface:   #131726;
+      --glass:     rgba(255,255,255,0.05);
+      --border:    rgba(255,255,255,0.08);
+      --primary:   #7c5cfc;
+      --primary2:  #9d7cff;
+      --green:     #22c55e;
+      --green2:    #16a34a;
+      --red:       #ef4444;
+      --red2:      #dc2626;
+      --yellow:    #f59e0b;
+      --text:      #f1f5f9;
+      --text-muted:#94a3b8;
+      --radius:    14px;
+      --radius-lg: 22px;
+      --shadow:    0 8px 32px rgba(0,0,0,0.45);
+      --shadow-sm: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===========================
+       BACKGROUND ORBS
+    =========================== */
+    .orbs {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.18;
+    }
+    .orb-1 { width: 500px; height: 500px; background: #7c5cfc; top: -150px; left: -100px; }
+    .orb-2 { width: 400px; height: 400px; background: #22c55e; bottom: -100px; right: -80px; }
+    .orb-3 { width: 300px; height: 300px; background: #ec4899; top: 40%; left: 50%; transform: translateX(-50%); }
+
+    /* ===========================
+       SCREENS
+    =========================== */
+    .screen { display: none; position: relative; z-index: 1; }
+    .screen.active { display: flex; }
+
+    /* ===========================
+       LOGIN SCREEN
+    =========================== */
+    #login-screen {
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow);
+      animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .login-logo .logo-icon {
+      width: 70px; height: 70px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      border-radius: 20px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 32px; margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(124,92,252,0.4);
+    }
+    .login-logo h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+    .login-logo p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block; font-size: 0.8rem; font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .user-select {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+    .user-btn {
+      background: var(--glass); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 14px 8px; cursor: pointer;
+      color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 0.82rem; font-weight: 600; text-align: center;
+      transition: all 0.2s ease;
+    }
+    .user-btn .avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; margin: 0 auto 8px;
+      background: linear-gradient(135deg, #7c5cfc44, #9d7cff44);
+    }
+    .user-btn:hover, .user-btn.selected {
+      border-color: var(--primary); background: rgba(124,92,252,0.15);
+      transform: translateY(-2px);
+    }
+    .user-btn.selected { box-shadow: 0 0 0 2px var(--primary); }
+
+    input[type="password"], input[type="text"], input[type="number"],
+    select, textarea {
+      width: 100%; background: rgba(255,255,255,0.06);
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 0.95rem; padding: 12px 16px;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      appearance: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124,92,252,0.2);
+    }
+    select option { background: #1e2235; color: var(--text); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 24px; border-radius: var(--radius);
+      font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; border: none; transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: #fff; width: 100%;
+      box-shadow: 0 4px 16px rgba(124,92,252,0.4);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,92,252,0.5); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-green {
+      background: linear-gradient(135deg, var(--green), var(--green2));
+      color: #fff; box-shadow: 0 4px 16px rgba(34,197,94,0.35);
+    }
+    .btn-green:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(34,197,94,0.5); }
+
+    .btn-red {
+      background: linear-gradient(135deg, var(--red), var(--red2));
+      color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,0.35);
+    }
+    .btn-red:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(239,68,68,0.5); }
+
+    .btn-ghost {
+      background: var(--glass); border: 1.5px solid var(--border); color: var(--text);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+
+    .btn-sm { padding: 7px 14px; font-size: 0.82rem; }
+    .btn-icon { padding: 8px; border-radius: 10px; }
+
+    .error-msg {
+      color: var(--red); font-size: 0.82rem; margin-top: 8px;
+      background: rgba(239,68,68,0.1); padding: 8px 12px; border-radius: 8px;
+      border: 1px solid rgba(239,68,68,0.2); display: none;
+    }
+    .error-msg.visible { display: block; animation: shake 0.3s ease; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    /* ===========================
+       APP SCREEN
+    =========================== */
+    #app-screen {
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    .header {
+      background: rgba(13,15,24,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .header-title { font-size: 1rem; font-weight: 700; }
+    .header-subtitle { font-size: 0.75rem; color: var(--text-muted); }
+
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .user-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--glass); border: 1px solid var(--border);
+      border-radius: 50px; padding: 6px 14px 6px 8px;
+      font-size: 0.82rem; font-weight: 600;
+    }
+    .user-badge .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+    }
+    .user-avatar-sm {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+    }
+
+    /* MAIN CONTENT */
+    .main { padding: 28px 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+    /* CARDS GRID */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px; margin-bottom: 28px;
+    }
+
+    .card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .card.card-balance::before { background: linear-gradient(90deg, var(--primary), var(--primary2)); }
+    .card.card-entry::before  { background: linear-gradient(90deg, var(--green), #4ade80); }
+    .card.card-exit::before   { background: linear-gradient(90deg, var(--red), #f87171); }
+    .card.card-count::before  { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
+
+    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+
+    .card-header-row {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .card-icon.purple { background: rgba(124,92,252,0.2); }
+    .card-icon.green  { background: rgba(34,197,94,0.2); }
+    .card-icon.red    { background: rgba(239,68,68,0.2); }
+    .card-icon.yellow { background: rgba(245,158,11,0.2); }
+
+    .card-period { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; }
+    .card-label  { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; margin-bottom: 6px; }
+    .card-value  { font-size: 1.7rem; font-weight: 800; letter-spacing: -1px; }
+    .card-value.green { color: var(--green); }
+    .card-value.red   { color: var(--red); }
+    .card-value.purple { color: var(--primary2); }
+    .card-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* ACTION BUTTONS */
+    .action-section {
+      display: flex; gap: 14px; margin-bottom: 28px; flex-wrap: wrap;
+    }
+    .action-btn {
+      flex: 1; min-width: 160px;
+      padding: 18px 28px; border-radius: var(--radius-lg);
+      font-size: 1rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      cursor: pointer; border: none; font-family: 'Inter', sans-serif;
+      transition: all 0.2s ease; letter-spacing: 0.2px;
+    }
+    .action-btn .icon { font-size: 1.4rem; }
+    .action-btn-entry {
+      background: linear-gradient(135deg, var(--green), #16a34a);
+      color: #fff; box-shadow: 0 6px 24px rgba(34,197,94,0.4);
+    }
+    .action-btn-entry:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(34,197,94,0.55); }
+    .action-btn-exit {
+      background: linear-gradient(135deg, var(--red), #dc2626);
+      color: #fff; box-shadow: 0 6px 24px rgba(239,68,68,0.4);
+    }
+    .action-btn-exit:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(239,68,68,0.55); }
+    .action-btn:active { transform: translateY(0) scale(0.98); }
+
+    /* HISTORY SECTION */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .section-title { font-size: 1.1rem; font-weight: 700; }
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 6px 14px; border-radius: 50px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; border: 1.5px solid var(--border);
+      background: var(--glass); color: var(--text-muted);
+      font-family: 'Inter', sans-serif; transition: all 0.2s;
+    }
+    .filter-btn.active { border-color: var(--primary); color: var(--text); background: rgba(124,92,252,0.18); }
+    .filter-btn:hover  { border-color: var(--primary2); color: var(--text); }
+
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .tx-item {
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px;
+      transition: all 0.2s; animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .tx-item:hover { border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.07); }
+
+    .tx-dot {
+      width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 1.15rem;
+    }
+    .tx-dot.entry { background: rgba(34,197,94,0.18); }
+    .tx-dot.exit  { background: rgba(239,68,68,0.18); }
+
+    .tx-info { flex: 1; min-width: 0; }
+    .tx-desc { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    .tx-amount { font-size: 1.05rem; font-weight: 700; white-space: nowrap; }
+    .tx-amount.entry { color: var(--green); }
+    .tx-amount.exit  { color: var(--red); }
+
+    .tx-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s; }
+    .tx-item:hover .tx-actions { opacity: 1; }
+
+    .btn-del {
+      width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer;
+      background: rgba(239,68,68,0.15); color: var(--red);
+      display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .btn-del:hover { background: rgba(239,68,68,0.3); }
+
+    .btn-edit {
+      width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer;
+      background: rgba(124,92,252,0.15); color: var(--primary2);
+      display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .btn-edit:hover { background: rgba(124,92,252,0.3); }
+    .modal-badge.edit { background: rgba(124,92,252,0.2); color: var(--primary2); }
+
+    .empty-state {
+      text-align: center; padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* User badges per person */
+    .user-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 2px 9px 2px 5px; border-radius: 50px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.2px;
+      flex-shrink: 0;
+    }
+    .user-chip .chip-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; font-weight: 800; color: #fff;
+    }
+    .user-chip.carol  { background: rgba(124,92,252,0.18); color: #a78bfa; border: 1px solid rgba(124,92,252,0.3); }
+    .user-chip.carol  .chip-dot { background: #7c5cfc; }
+    .user-chip.camili { background: rgba(56,189,248,0.15); color: #67e8f9; border: 1px solid rgba(56,189,248,0.3); }
+    .user-chip.camili .chip-dot { background: #0ea5e9; }
+    .user-chip.keithi { background: rgba(236,72,153,0.15); color: #f9a8d4; border: 1px solid rgba(236,72,153,0.3); }
+    .user-chip.keithi .chip-dot { background: #ec4899; }
+
+    /* ===========================
+       MODALS
+    =========================== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; animation: fadeInBg 0.2s ease; }
+    @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal {
+      background: #161929; border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 32px;
+      width: 100%; max-width: 460px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+      animation: modalIn 0.25s ease;
+      position: relative;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.93) translateY(10px); }
+      to   { opacity: 1; transform: scale(1)   translateY(0); }
+    }
+
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .modal-title {
+      font-size: 1.15rem; font-weight: 700;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .modal-badge {
+      padding: 3px 10px; border-radius: 50px; font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .modal-badge.entry { background: rgba(34,197,94,0.2); color: var(--green); }
+    .modal-badge.exit  { background: rgba(239,68,68,0.2); color: var(--red); }
+
+    .btn-close {
+      width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border);
+      background: var(--glass); color: var(--text-muted);
+      cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-close:hover { background: rgba(239,68,68,0.15); color: var(--red); border-color: var(--red); }
+
+    .modal-footer {
+      display: flex; gap: 10px; margin-top: 24px;
+    }
+    .modal-footer .btn { flex: 1; }
+
+    /* Value display in modal */
+    .value-preview {
+      text-align: center; padding: 18px; border-radius: var(--radius);
+      margin-bottom: 20px; border: 1.5px dashed var(--border);
+      font-size: 2rem; font-weight: 800; letter-spacing: -1px;
+    }
+    .value-preview.entry { color: var(--green); border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.06); }
+    .value-preview.exit  { color: var(--red);   border-color: rgba(239,68,68,0.3);  background: rgba(239,68,68,0.06); }
+
+    /* ===========================
+       TOAST
+    =========================== */
+    .toast-container {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .toast {
+      background: #1e2435; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 18px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: var(--shadow); min-width: 250px; max-width: 340px;
+      animation: slideInRight 0.3s ease;
+      font-size: 0.88rem; font-weight: 500;
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .toast.success .toast-icon { color: var(--green); }
+    .toast.error   .toast-icon { color: var(--red); }
+    .toast-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+    /* ===========================
+       REPORT MODAL
+    =========================== */
+    .report-content {
+      background: rgba(0,0,0,0.2); border-radius: var(--radius);
+      padding: 16px; font-size: 0.82rem; color: var(--text-muted);
+      white-space: pre-wrap; font-family: 'Courier New', monospace;
+      max-height: 360px; overflow-y: auto; line-height: 1.8;
+    }
+
+    /* ===========================
+       CONFIRM DIALOG
+    =========================== */
+    .confirm-overlay {
+      display: none; position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box {
+      background: #161929; border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 28px;
+      max-width: 360px; width: 100%; text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+      animation: modalIn 0.2s ease;
+    }
+    .confirm-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .confirm-box h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .confirm-box p  { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 22px; }
+    .confirm-btns { display: flex; gap: 10px; }
+    .confirm-btns .btn { flex: 1; }
+
+    /* ===========================
+       SCROLLBAR
+    =========================== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* ===========================
+       CALENDAR
+    =========================== */
+    .calendar-section {
+      margin-bottom: 28px;
+    }
+    .calendar-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 18px;
+      align-items: start;
+    }
+    @media (max-width: 860px) {
+      .calendar-wrapper { grid-template-columns: 1fr; }
+    }
+
+    .calendar-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      position: relative; overflow: hidden;
+    }
+    .calendar-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--primary2));
+    }
+
+    .cal-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .cal-nav-title {
+      font-size: 1rem; font-weight: 700; text-transform: capitalize;
+    }
+    .cal-arrow {
+      width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid var(--border);
+      background: var(--glass); color: var(--text); cursor: pointer;
+      font-size: 1rem; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .cal-arrow:hover { border-color: var(--primary); background: rgba(124,92,252,0.18); }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-weekday {
+      text-align: center; font-size: 0.68rem; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.4px; padding: 4px 0;
+    }
+    .cal-day {
+      aspect-ratio: 1;
+      border-radius: 9px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-size: 0.82rem; font-weight: 500; cursor: pointer;
+      position: relative; transition: all 0.15s;
+      border: 1.5px solid transparent;
+    }
+    .cal-day:hover:not(.cal-empty):not(.cal-other) {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.12);
+    }
+    .cal-day.cal-empty, .cal-day.cal-other {
+      cursor: default; opacity: 0.18;
+    }
+    .cal-day.cal-today {
+      border-color: var(--primary);
+      background: rgba(124,92,252,0.15);
+      color: var(--primary2); font-weight: 700;
+    }
+    .cal-day.cal-selected {
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      border-color: var(--primary2);
+      color: #fff; font-weight: 700;
+      box-shadow: 0 4px 14px rgba(124,92,252,0.45);
+    }
+    .cal-day.cal-selected .cal-dots { display: none; }
+
+    .cal-dots {
+      display: flex; gap: 2px; margin-top: 2px;
+    }
+    .cal-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+    }
+    .cal-dot.entry { background: var(--green); }
+    .cal-dot.exit  { background: var(--red); }
+
+    /* Day Summary Panel */
+    .day-summary-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      position: relative; overflow: hidden;
+    }
+    .day-summary-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--yellow), #fbbf24);
+    }
+    .day-summary-title {
+      font-size: 0.78rem; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;
+    }
+    .day-summary-date {
+      font-size: 1.1rem; font-weight: 800; margin-bottom: 16px;
+      letter-spacing: -0.3px;
+    }
+    .day-summary-rows { display: flex; flex-direction: column; gap: 10px; }
+    .day-summary-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 12px; border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .day-summary-row .dsr-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+    .day-summary-row .dsr-val   { font-size: 0.95rem; font-weight: 700; }
+    .day-summary-row.entry-row { background: rgba(34,197,94,0.07); border-color: rgba(34,197,94,0.2); }
+    .day-summary-row.exit-row  { background: rgba(239,68,68,0.07); border-color: rgba(239,68,68,0.2); }
+    .day-summary-row.bal-row   { background: rgba(124,92,252,0.07); border-color: rgba(124,92,252,0.2); }
+    .day-no-select {
+      text-align: center; padding: 30px 10px;
+      color: var(--text-muted); font-size: 0.85rem;
+    }
+    .day-no-select .nsi { font-size: 2.2rem; margin-bottom: 10px; opacity: 0.4; }
+    .btn-view-day {
+      width: 100%; margin-top: 14px;
+      padding: 10px; border-radius: var(--radius);
+      font-size: 0.85rem; font-weight: 600;
+      background: rgba(124,92,252,0.18); border: 1.5px solid rgba(124,92,252,0.35);
+      color: var(--primary2); cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+    }
+    .btn-view-day:hover { background: rgba(124,92,252,0.3); }
+    .btn-clear-day {
+      width: 100%; margin-top: 8px;
+      padding: 8px; border-radius: var(--radius);
+      font-size: 0.78rem; font-weight: 500;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+    }
+    .btn-clear-day:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+    /* ===========================
+       RESPONSIVE
+    =========================== */
+    @media (max-width: 600px) {
+      .login-card { padding: 32px 22px; }
+      .header { padding: 0 16px; }
+      .main { padding: 20px 16px; }
+      .action-btn { min-width: 130px; padding: 16px 18px; font-size: 0.92rem; }
+      .card-value { font-size: 1.4rem; }
+      .header-subtitle { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Background Orbs -->
+<div class="orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- =========================================
+     SCREEN 1: LOGIN
+========================================== -->
+<div id="login-screen" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">💰</div>
+      <h1>Caixa VIGI</h1>
+      <p>Sistema de Controle Financeiro</p>
+    </div>
+
+    <div class="form-group">
+      <label>Selecione sua conta</label>
+      <div class="user-select">
+        <button class="user-btn" id="u-carol" onclick="selectUser('Carol')">
+          <div class="avatar">👩‍💼</div>
+          Carol
+        </button>
+        <button class="user-btn" id="u-camili" onclick="selectUser('Camili')">
+          <div class="avatar">👩‍💻</div>
+          Camili
+        </button>
+        <button class="user-btn" id="u-keithi" onclick="selectUser('Keithi')">
+          <div class="avatar">👩‍🎨</div>
+          Keithi
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="login-password" placeholder="Digite sua senha"
+             onkeydown="if(event.key==='Enter') doLogin()" />
+      <div class="error-msg" id="login-error">Usuária ou senha incorretos.</div>
+    </div>
+
+    <button class="btn btn-primary" onclick="doLogin()" id="login-btn">
+      <span>Entrar</span>
+      <span>→</span>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================
+     SCREEN 2: APP
+========================================== -->
+<div id="app-screen" class="screen">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">💰</div>
+      <div>
+        <div class="header-title">Caixa VIGI</div>
+        <div class="header-subtitle" id="header-date"></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="dot"></div>
+        <div class="user-avatar-sm" id="header-avatar"></div>
+        <span id="header-username"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="openReport()" title="Relatório">📊</button>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()" title="Sair">🚪</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- CARDS -->
+    <div class="cards-grid">
+      <div class="card card-balance">
+        <div class="card-header-row">
+          <div class="card-icon purple">💰</div>
+          <span class="card-period">Saldo Atual</span>
+        </div>
+        <div class="card-label">Balanço Geral</div>
+        <div class="card-value purple" id="card-balance">R$ 0,00</div>
+        <div class="card-sub" id="card-balance-sub">Todas as transações</div>
+      </div>
+
+      <div class="card card-entry">
+        <div class="card-header-row">
+          <div class="card-icon green">📈</div>
+          <span class="card-period">Hoje</span>
+        </div>
+        <div class="card-label">Total de Entradas</div>
+        <div class="card-value green" id="card-entries">R$ 0,00</div>
+        <div class="card-sub" id="card-entries-sub">0 lançamentos</div>
+      </div>
+
+      <div class="card card-exit">
+        <div class="card-header-row">
+          <div class="card-icon red">📉</div>
+          <span class="card-period">Hoje</span>
+        </div>
+        <div class="card-label">Total de Saídas</div>
+        <div class="card-value red" id="card-exits">R$ 0,00</div>
+        <div class="card-sub" id="card-exits-sub">0 lançamentos</div>
+      </div>
+
+      <div class="card card-count">
+        <div class="card-header-row">
+          <div class="card-icon yellow">📋</div>
+          <span class="card-period">Total</span>
+        </div>
+        <div class="card-label">Transações Registradas</div>
+        <div class="card-value" id="card-count" style="color: var(--yellow)">0</div>
+        <div class="card-sub" id="card-count-sub">No sistema</div>
+      </div>
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="action-section">
+      <button class="action-btn action-btn-entry" onclick="openModal('entry')" id="btn-entry">
+        <span class="icon">➕</span>
+        Lançar Entrada
+      </button>
+      <button class="action-btn action-btn-exit" onclick="openModal('exit')" id="btn-exit">
+        <span class="icon">➖</span>
+        Lançar Saída
+      </button>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="calendar-section">
+      <div class="section-header" style="margin-bottom: 14px;">
+        <div class="section-title">📅 Calendário</div>
+        <span style="font-size:0.78rem;color:var(--text-muted)">Clique em um dia para ver os lançamentos</span>
+      </div>
+      <div class="calendar-wrapper">
+        <!-- Calendar Grid -->
+        <div class="calendar-card">
+          <div class="cal-nav">
+            <button class="cal-arrow" onclick="calPrevMonth()">‹</button>
+            <div class="cal-nav-title" id="cal-title"></div>
+            <button class="cal-arrow" onclick="calNextMonth()">›</button>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <!-- Day Summary -->
+        <div class="day-summary-card">
+          <div class="day-summary-title">📊 Resumo do Dia</div>
+          <div id="day-summary-content">
+            <div class="day-no-select">
+              <div class="nsi">📅</div>
+              <p>Selecione um dia no calendário para ver o resumo.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="section-header">
+      <div class="section-title" id="history-title">📋 Histórico de Lançamentos</div>
+      <div class="filter-row">
+        <button class="filter-btn active" id="filter-all"   onclick="setFilter('all')">Todos</button>
+        <button class="filter-btn"        id="filter-entry" onclick="setFilter('entry')">Entradas</button>
+        <button class="filter-btn"        id="filter-exit"  onclick="setFilter('exit')">Saídas</button>
+        <button class="filter-btn"        id="filter-today" onclick="setFilter('today')">Hoje</button>
+      </div>
+    </div>
+    <div class="history-list" id="history-list"></div>
+
+  </main>
+</div>
+
+<!-- =========================================
+     MODAL: LANÇAR ENTRADA
+========================================== -->
+<div class="modal-overlay" id="modal-entry">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">
+        📈 Lançar Entrada
+        <span class="modal-badge entry">Receita</span>
+      </div>
+      <button class="btn-close" onclick="closeModal('entry')">✕</button>
+    </div>
+
+    <div class="value-preview entry" id="entry-preview">R$ 0,00</div>
+
+    <div class="form-group">
+      <label>Valor (R$)</label>
+      <input type="number" id="entry-value" placeholder="0,00" min="0.01" step="0.01"
+             oninput="updatePreview('entry')" onkeydown="if(event.key==='Enter') submitEntry()" />
+    </div>
+    <div class="form-group">
+      <label>Descrição</label>
+      <input type="text" id="entry-desc" placeholder="Ex: Instalação, Manutenção..." maxlength="80"
+             onkeydown="if(event.key==='Enter') submitEntry()" />
+    </div>
+    <div class="form-group">
+      <label>Categoria</label>
+      <select id="entry-cat">
+        <option value="Câmeras">📷 Câmeras</option>
+        <option value="Alarmes">🚨 Alarmes</option>
+        <option value="Câmeras e Alarmes">📷🚨 Câmeras e Alarmes</option>
+        <option value="Outras">📦 Outras</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Observação (opcional)</label>
+      <input type="text" id="entry-obs" placeholder="Alguma observação adicional..." maxlength="120" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('entry')">Cancelar</button>
+      <button class="btn btn-green" onclick="submitEntry()" id="submit-entry">✔ Confirmar Entrada</button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================
+     MODAL: LANÇAR SAÍDA
+========================================== -->
+<div class="modal-overlay" id="modal-exit">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">
+        📉 Lançar Saída
+        <span class="modal-badge exit">Despesa</span>
+      </div>
+      <button class="btn-close" onclick="closeModal('exit')">✕</button>
+    </div>
+
+    <div class="value-preview exit" id="exit-preview">R$ 0,00</div>
+
+    <div class="form-group">
+      <label>Valor (R$)</label>
+      <input type="number" id="exit-value" placeholder="0,00" min="0.01" step="0.01"
+             oninput="updatePreview('exit')" onkeydown="if(event.key==='Enter') submitExit()" />
+    </div>
+    <div class="form-group">
+      <label>Motivo da Saída</label>
+      <input type="text" id="exit-motivo" placeholder="Ex: Compra de material, Conta de luz..." maxlength="120"
+             onkeydown="if(event.key==='Enter') submitExit()" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('exit')">Cancelar</button>
+      <button class="btn btn-red" onclick="submitExit()" id="submit-exit">✔ Confirmar Saída</button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================
+     MODAL: EDITAR LANÇAMENTO
+========================================== -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">
+        ✏️ Editar Lançamento
+        <span class="modal-badge" id="edit-badge">–</span>
+      </div>
+      <button class="btn-close" onclick="closeModal('edit')">✕</button>
+    </div>
+
+    <div class="value-preview" id="edit-preview" style="color:var(--primary2);border-color:rgba(124,92,252,0.3);background:rgba(124,92,252,0.06)">R$ 0,00</div>
+
+    <div class="form-group">
+      <label>Valor (R$)</label>
+      <input type="number" id="edit-value" placeholder="0,00" min="0.01" step="0.01"
+             oninput="updateEditPreview()" />
+    </div>
+    <div class="form-group">
+      <label>Descrição</label>
+      <input type="text" id="edit-desc" placeholder="Descrição..." maxlength="80" />
+    </div>
+    <div class="form-group" id="edit-cat-group">
+      <label>Categoria</label>
+      <select id="edit-cat">
+        <option value="Câmeras">📷 Câmeras</option>
+        <option value="Alarmes">🚨 Alarmes</option>
+        <option value="Câmeras e Alarmes">📷🚨 Câmeras e Alarmes</option>
+        <option value="Outras">📦 Outras</option>
+      </select>
+    </div>
+    <div class="form-group" id="edit-motivo-group" style="display:none">
+      <label>Motivo da Saída</label>
+      <input type="text" id="edit-motivo" placeholder="Motivo..." maxlength="120" />
+    </div>
+    <div class="form-group">
+      <label>Observação (opcional)</label>
+      <input type="text" id="edit-obs" placeholder="Observação adicional..." maxlength="120" />
+    </div>
+    <input type="hidden" id="edit-tx-id" />
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('edit')">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitEdit()">✔ Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================
+     MODAL: RELATÓRIO
+========================================== -->
+<div class="modal-overlay" id="modal-report">
+  <div class="modal" style="max-width: 540px;">
+    <div class="modal-header">
+      <div class="modal-title">📊 Relatório do Caixa</div>
+      <button class="btn-close" onclick="closeModal('report')">✕</button>
+    </div>
+    <div class="report-content" id="report-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('report')">Fechar</button>
+      <button class="btn btn-primary" onclick="printReport()">🖨️ Imprimir / Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================
+     CONFIRM DELETE DIALOG
+========================================== -->
+<div class="confirm-overlay" id="confirm-del">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <h3>Excluir lançamento?</h3>
+    <p>Esta ação não pode ser desfeita. O lançamento será removido permanentemente.</p>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="cancelDelete()">Cancelar</button>
+      <button class="btn btn-red"   onclick="confirmDelete()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- =========================================
+     JAVASCRIPT
+========================================== -->
+<script>
+/* ===========================
+   DATA & STATE
+=========================== */
+const USERS = {
+  'Carol':  { pass: 'clic3369', emoji: 'C' },
+  'Camili': { pass: 'clic3369', emoji: 'K' },
+  'Keithi': { pass: 'clic3369', emoji: 'K' },
+};
+const STORAGE_KEY = 'caixavigi_transactions';
+const SESSION_KEY = 'caixavigi_session';
+
+let currentUser = null;
+let transactions = [];
+let currentFilter = 'all';
+let pendingDeleteId = null;
+
+// Calendar state
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-based
+let selectedDate = null; // 'DD/MM/YYYY' string
+
+/* ===========================
+   INIT
+=========================== */
+window.addEventListener('DOMContentLoaded', () => {
+  loadTransactions();
+  const session = localStorage.getItem(SESSION_KEY);
+  if (session) {
+    currentUser = session;
+    showApp();
+  }
+  updateHeaderDate();
+});
+
+function updateHeaderDate() {
+  const el = document.getElementById('header-date');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+/* ===========================
+   AUTH
+=========================== */
+let selectedUser = null;
+
+function selectUser(name) {
+  selectedUser = name;
+  ['carol','camili','keithi'].forEach(u => document.getElementById('u-'+u).classList.remove('selected'));
+  document.getElementById('u-'+name.toLowerCase()).classList.add('selected');
+  document.getElementById('login-password').focus();
+  document.getElementById('login-error').classList.remove('visible');
+}
+
+function doLogin() {
+  const passEl = document.getElementById('login-password');
+  const errEl  = document.getElementById('login-error');
+  const pass   = passEl.value;
+
+  if (!selectedUser) {
+    errEl.textContent = 'Selecione uma usuária primeiro.';
+    errEl.classList.add('visible'); return;
+  }
+  if (!pass) {
+    errEl.textContent = 'Digite a senha.';
+    errEl.classList.add('visible'); return;
+  }
+  if (USERS[selectedUser].pass !== pass) {
+    errEl.textContent = 'Senha incorreta. Tente novamente.';
+    errEl.classList.add('visible');
+    passEl.value = '';
+    passEl.focus(); return;
+  }
+
+  errEl.classList.remove('visible');
+  currentUser = selectedUser;
+  localStorage.setItem(SESSION_KEY, currentUser);
+  showApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  selectedUser = null;
+  localStorage.removeItem(SESSION_KEY);
+  document.getElementById('login-password').value = '';
+  ['carol','camili','keithi'].forEach(u => document.getElementById('u-'+u).classList.remove('selected'));
+  document.getElementById('login-error').classList.remove('visible');
+  document.getElementById('app-screen').classList.remove('active');
+  document.getElementById('login-screen').classList.add('active');
+}
+
+function showApp() {
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('app-screen').classList.add('active');
+  // set header
+  document.getElementById('header-username').textContent = currentUser;
+  document.getElementById('header-avatar').textContent = currentUser[0].toUpperCase();
+  updateHeaderDate();
+  renderAll();
+}
+
+/* ===========================
+   TRANSACTIONS
+=========================== */
+function loadTransactions() {
+  try {
+    transactions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch(e) { transactions = []; }
+}
+
+function saveTransactions() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+}
+
+function addTransaction(type, value, desc, cat, obs) {
+  const now = new Date();
+  const tx = {
+    id: Date.now() + Math.random(),
+    type,       // 'entry' | 'exit'
+    value: parseFloat(value),
+    desc: desc.trim() || (type === 'entry' ? 'Entrada' : 'Saída'),
+    cat,
+    obs: obs.trim(),
+    user: currentUser,
+    date: now.toISOString(),
+    dateStr: now.toLocaleDateString('pt-BR'),
+    timeStr: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+  };
+  transactions.unshift(tx);
+  saveTransactions();
+  renderAll();
+  showToast(
+    type === 'entry' ? 'Entrada registrada com sucesso!' : 'Saída registrada com sucesso!',
+    type === 'entry' ? 'success' : 'error'
+  );
+}
+
+function deleteTransaction(id) {
+  transactions = transactions.filter(t => t.id !== id);
+  saveTransactions();
+  renderAll();
+  showToast('Lançamento excluído.', 'error');
+}
+
+/* ===========================
+   CARDS / STATS
+=========================== */
+function getToday() {
+  return new Date().toLocaleDateString('pt-BR');
+}
+
+function renderStats() {
+  const today = getToday();
+  const todayTx = transactions.filter(t => t.dateStr === today);
+
+  const totalEntry = transactions.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
+  const totalExit  = transactions.filter(t => t.type === 'exit').reduce((s, t)  => s + t.value, 0);
+  const balance    = totalEntry - totalExit;
+
+  const todayEntry = todayTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
+  const todayExit  = todayTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
+  const todayEntryCount = todayTx.filter(t => t.type === 'entry').length;
+  const todayExitCount  = todayTx.filter(t => t.type === 'exit').length;
+
+  document.getElementById('card-balance').textContent = fmt(balance);
+  document.getElementById('card-balance').className = 'card-value ' + (balance >= 0 ? 'green' : 'red');
+  document.getElementById('card-balance-sub').textContent = `${transactions.length} transação(ões) no total`;
+
+  document.getElementById('card-entries').textContent = fmt(todayEntry);
+  document.getElementById('card-entries-sub').textContent = `${todayEntryCount} lançamento(s) hoje`;
+
+  document.getElementById('card-exits').textContent = fmt(todayExit);
+  document.getElementById('card-exits-sub').textContent = `${todayExitCount} lançamento(s) hoje`;
+
+  document.getElementById('card-count').textContent = transactions.length;
+  document.getElementById('card-count-sub').textContent = `${todayTx.length} hoje`;
+}
+
+/* ===========================
+   HISTORY RENDER
+=========================== */
+function setFilter(f) {
+  currentFilter = f;
+  selectedDate = null;
+  ['all','entry','exit','today'].forEach(k => {
+    document.getElementById('filter-'+k).classList.toggle('active', k === f);
+  });
+  // Clear calendar selection
+  document.querySelectorAll('.cal-day.cal-selected').forEach(d => d.classList.remove('cal-selected'));
+  document.getElementById('day-summary-content').innerHTML = `<div class="day-no-select"><div class="nsi">📅</div><p>Selecione um dia no calendário para ver o resumo.</p></div>`;
+  document.getElementById('history-title').textContent = '📋 Histórico de Lançamentos';
+  renderHistory();
+}
+
+function getFiltered() {
+  const today = getToday();
+  return transactions.filter(t => {
+    if (currentFilter === 'date')  return t.dateStr === selectedDate;
+    if (currentFilter === 'all')   return true;
+    if (currentFilter === 'today') return t.dateStr === today;
+    return t.type === currentFilter;
+  });
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const filtered = getFiltered();
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <p>Nenhum lançamento encontrado.</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(t => {
+    const userKey = t.user ? t.user.toLowerCase() : 'carol';
+    const userInitial = t.user ? t.user[0].toUpperCase() : '?';
+    return `
+    <div class="tx-item" id="tx-${t.id}">
+      <div class="tx-dot ${t.type}">${t.type === 'entry' ? '📈' : '📉'}</div>
+      <div class="tx-info">
+        <div class="tx-desc">${escHtml(t.desc)}</div>
+        <div class="tx-meta">
+          ${escHtml(t.cat)} &bull; ${t.dateStr} &bull; ${t.timeStr}
+          ${t.obs ? ' &bull; ' + escHtml(t.obs) : ''}
+        </div>
+      </div>
+      <div class="tx-amount ${t.type}">${t.type === 'entry' ? '+' : '-'}${fmt(t.value)}</div>
+      <span class="user-chip ${userKey}">
+        <span class="chip-dot">${userInitial}</span>
+        ${escHtml(t.user)}
+      </span>
+      <div class="tx-actions">
+        <button class="btn-edit" onclick="openEditModal(${t.id})" title="Editar">✏️</button>
+        <button class="btn-del" onclick="requestDelete(${t.id})" title="Excluir">🗑️</button>
+      </div>
+    </div>
+  `;
+  }).join('');
+}
+
+function renderAll() {
+  renderStats();
+  renderCalendar();
+  renderHistory();
+}
+
+/* ===========================
+   CALENDAR
+=========================== */
+const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function renderCalendar() {
+  const titleEl = document.getElementById('cal-title');
+  const gridEl  = document.getElementById('cal-grid');
+  if (!titleEl || !gridEl) return;
+
+  titleEl.textContent = `${MONTHS[calMonth]} ${calYear}`;
+
+  // Build a map: dateStr -> {entry, exit}
+  const txMap = {};
+  transactions.forEach(t => {
+    if (!txMap[t.dateStr]) txMap[t.dateStr] = { entry: 0, exit: 0 };
+    txMap[t.dateStr][t.type]++;
+  });
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date();
+  const todayStr = today.toLocaleDateString('pt-BR');
+
+  let html = '';
+
+  // Weekday headers
+  WEEKDAYS.forEach(d => { html += `<div class="cal-weekday">${d}</div>`; });
+
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="cal-day cal-empty"></div>`;
+  }
+
+  // Days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(calYear, calMonth, d);
+    const dateStr = dateObj.toLocaleDateString('pt-BR');
+    const isToday    = dateStr === todayStr;
+    const isSelected = dateStr === selectedDate;
+    const info = txMap[dateStr];
+
+    let classes = 'cal-day';
+    if (isToday)    classes += ' cal-today';
+    if (isSelected) classes += ' cal-selected';
+
+    let dots = '';
+    if (info && !isSelected) {
+      if (info.entry > 0) dots += `<div class="cal-dot entry"></div>`;
+      if (info.exit  > 0) dots += `<div class="cal-dot exit"></div>`;
+    }
+
+    html += `<div class="${classes}" onclick="selectCalDay('${dateStr}', ${d})">`
+          + `<span>${d}</span>`
+          + (dots ? `<div class="cal-dots">${dots}</div>` : '')
+          + `</div>`;
+  }
+
+  gridEl.innerHTML = html;
+}
+
+function calPrevMonth() {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function calNextMonth() {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function selectCalDay(dateStr, day) {
+  // Toggle: if already selected, deselect
+  if (selectedDate === dateStr) {
+    selectedDate = null;
+    currentFilter = 'all';
+    ['all','entry','exit','today'].forEach(k =>
+      document.getElementById('filter-'+k).classList.toggle('active', k === 'all'));
+    document.getElementById('day-summary-content').innerHTML =
+      `<div class="day-no-select"><div class="nsi">📅</div><p>Selecione um dia no calendário para ver o resumo.</p></div>`;
+    document.getElementById('history-title').textContent = '📋 Histórico de Lançamentos';
+    renderCalendar();
+    renderHistory();
+    return;
+  }
+
+  selectedDate = dateStr;
+  currentFilter = 'date';
+
+  // Deactivate all filter buttons
+  ['all','entry','exit','today'].forEach(k =>
+    document.getElementById('filter-'+k).classList.remove('active'));
+
+  // Update history title
+  const [dd, mm, yyyy] = dateStr.split('/');
+  const dateObj = new Date(parseInt(yyyy), parseInt(mm)-1, parseInt(dd));
+  const dayName = dateObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  document.getElementById('history-title').textContent = `📋 Lançamentos — ${dayName}`;
+
+  // Day summary
+  const dayTx = transactions.filter(t => t.dateStr === dateStr);
+  const entryTotal = dayTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
+  const exitTotal  = dayTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
+  const balance    = entryTotal - exitTotal;
+  const entryCount = dayTx.filter(t => t.type === 'entry').length;
+  const exitCount  = dayTx.filter(t => t.type === 'exit').length;
+  const balColor   = balance >= 0 ? 'var(--green)' : 'var(--red)';
+
+  if (dayTx.length === 0) {
+    document.getElementById('day-summary-content').innerHTML = `
+      <div class="day-summary-date">${dayName.split(',')[0] || dateStr}</div>
+      <div class="day-no-select" style="padding: 20px 0">
+        <div class="nsi">📭</div>
+        <p>Nenhum lançamento neste dia.</p>
+      </div>`;
+  } else {
+    document.getElementById('day-summary-content').innerHTML = `
+      <div class="day-summary-date">${dateStr}</div>
+      <div class="day-summary-rows">
+        <div class="day-summary-row entry-row">
+          <div>
+            <div class="dsr-label">📈 Entradas (${entryCount})</div>
+          </div>
+          <div class="dsr-val" style="color:var(--green)">${fmt(entryTotal)}</div>
+        </div>
+        <div class="day-summary-row exit-row">
+          <div>
+            <div class="dsr-label">📉 Saídas (${exitCount})</div>
+          </div>
+          <div class="dsr-val" style="color:var(--red)">${fmt(exitTotal)}</div>
+        </div>
+        <div class="day-summary-row bal-row">
+          <div>
+            <div class="dsr-label">💰 Saldo do Dia</div>
+          </div>
+          <div class="dsr-val" style="color:${balColor}">${fmt(balance)}</div>
+        </div>
+      </div>
+      <button class="btn-view-day" onclick="scrollToHistory()">
+        📋 Ver ${dayTx.length} lançamento(s)
+      </button>
+      <button class="btn-clear-day" onclick="selectCalDay('${dateStr}', ${day})">
+        ✕ Limpar seleção
+      </button>`;
+  }
+
+  renderCalendar();
+  renderHistory();
+}
+
+function scrollToHistory() {
+  document.getElementById('history-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ===========================
+   MODALS
+=========================== */
+function openModal(type) {
+  clearModal(type);
+  document.getElementById('modal-'+type).classList.add('open');
+  setTimeout(() => {
+    document.getElementById(type+'-value').focus();
+  }, 100);
+}
+
+function closeModal(type) {
+  document.getElementById('modal-'+type).classList.remove('open');
+}
+
+function clearModal(type) {
+  if (type === 'entry') {
+    document.getElementById('entry-value').value = '';
+    document.getElementById('entry-desc').value  = '';
+    document.getElementById('entry-obs').value   = '';
+    document.getElementById('entry-cat').selectedIndex = 0;
+    document.getElementById('entry-preview').textContent = 'R$ 0,00';
+  } else if (type === 'exit') {
+    document.getElementById('exit-value').value  = '';
+    document.getElementById('exit-motivo').value = '';
+    document.getElementById('exit-preview').textContent  = 'R$ 0,00';
+  }
+}
+
+function updatePreview(type) {
+  const val = parseFloat(document.getElementById(type+'-value').value) || 0;
+  document.getElementById(type+'-preview').textContent = fmt(val);
+}
+
+function submitEntry() {
+  const val  = document.getElementById('entry-value').value;
+  const desc = document.getElementById('entry-desc').value;
+  const cat  = document.getElementById('entry-cat').value;
+  const obs  = document.getElementById('entry-obs').value;
+  if (!val || parseFloat(val) <= 0) { showToast('Digite um valor válido.', 'error'); return; }
+  addTransaction('entry', val, desc, cat, obs);
+  closeModal('entry');
+}
+
+function submitExit() {
+  const val    = document.getElementById('exit-value').value;
+  const motivo = document.getElementById('exit-motivo').value;
+  if (!val || parseFloat(val) <= 0) { showToast('Digite um valor válido.', 'error'); return; }
+  // For exits: desc = motivo, cat = 'Saída', obs = ''
+  addTransaction('exit', val, motivo || 'Saída', 'Saída', '');
+  closeModal('exit');
+}
+
+/* ===========================
+   EDIT TRANSACTION
+=========================== */
+function openEditModal(id) {
+  const t = transactions.find(tx => tx.id === id);
+  if (!t) return;
+
+  document.getElementById('edit-tx-id').value  = id;
+  document.getElementById('edit-value').value  = t.value;
+  document.getElementById('edit-desc').value   = t.desc;
+  document.getElementById('edit-obs').value    = t.obs || '';
+  document.getElementById('edit-preview').textContent = fmt(t.value);
+
+  const badge = document.getElementById('edit-badge');
+  if (t.type === 'entry') {
+    badge.textContent = 'Entrada';
+    badge.className   = 'modal-badge entry';
+    // Show category, hide motivo
+    document.getElementById('edit-cat-group').style.display    = '';
+    document.getElementById('edit-motivo-group').style.display = 'none';
+    // Pre-select category
+    const catEl = document.getElementById('edit-cat');
+    const opts  = ['Câmeras','Alarmes','Câmeras e Alarmes','Outras'];
+    const idx   = opts.indexOf(t.cat);
+    catEl.selectedIndex = idx >= 0 ? idx : 3;
+  } else {
+    badge.textContent = 'Saída';
+    badge.className   = 'modal-badge exit';
+    // Show motivo, hide category
+    document.getElementById('edit-cat-group').style.display    = 'none';
+    document.getElementById('edit-motivo-group').style.display = '';
+    document.getElementById('edit-motivo').value = t.desc;
+  }
+
+  document.getElementById('modal-edit').classList.add('open');
+  setTimeout(() => document.getElementById('edit-value').focus(), 100);
+}
+
+function updateEditPreview() {
+  const val = parseFloat(document.getElementById('edit-value').value) || 0;
+  document.getElementById('edit-preview').textContent = fmt(val);
+}
+
+function submitEdit() {
+  const idRaw = document.getElementById('edit-tx-id').value;
+  const id    = parseFloat(idRaw);
+  const idx   = transactions.findIndex(tx => tx.id === id);
+  if (idx === -1) { showToast('Lançamento não encontrado.', 'error'); return; }
+
+  const val = parseFloat(document.getElementById('edit-value').value);
+  if (!val || val <= 0) { showToast('Digite um valor válido.', 'error'); return; }
+
+  const t = transactions[idx];
+  t.value = val;
+  t.desc  = document.getElementById('edit-desc').value.trim() || t.desc;
+  t.obs   = document.getElementById('edit-obs').value.trim();
+
+  if (t.type === 'entry') {
+    t.cat = document.getElementById('edit-cat').value;
+  } else {
+    const motivo = document.getElementById('edit-motivo').value.trim();
+    if (motivo) t.desc = motivo;
+    t.cat = 'Saída';
+  }
+
+  saveTransactions();
+  renderAll();
+  closeModal('edit');
+  showToast('Lançamento atualizado com sucesso!', 'success');
+}
+
+/* Close modals on overlay click */
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.classList.remove('open');
+    }
+  });
+});
+
+/* ===========================
+   DELETE
+=========================== */
+function requestDelete(id) {
+  pendingDeleteId = id;
+  document.getElementById('confirm-del').classList.add('open');
+}
+function cancelDelete() {
+  pendingDeleteId = null;
+  document.getElementById('confirm-del').classList.remove('open');
+}
+function confirmDelete() {
+  if (pendingDeleteId !== null) {
+    deleteTransaction(pendingDeleteId);
+    pendingDeleteId = null;
+  }
+  document.getElementById('confirm-del').classList.remove('open');
+}
+
+/* ===========================
+   REPORT
+=========================== */
+function openReport() {
+  const today = getToday();
+  const all   = transactions;
+  const todayTx = all.filter(t => t.dateStr === today);
+
+  const totalEntry = all.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
+  const totalExit  = all.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
+  const balance    = totalEntry - totalExit;
+
+  const todayEntry = todayTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
+  const todayExit  = todayTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
+
+  const hr = '─'.repeat(46);
+  let lines = [];
+  lines.push('╔══════════════════════════════════════════════╗');
+  lines.push('║           RELATÓRIO DE CAIXA - VIGI          ║');
+  lines.push('╚══════════════════════════════════════════════╝');
+  lines.push('');
+  lines.push(`  Gerado em: ${new Date().toLocaleString('pt-BR')}`);
+  lines.push(`  Usuária:   ${currentUser}`);
+  lines.push('');
+  lines.push(hr);
+  lines.push('  RESUMO GERAL');
+  lines.push(hr);
+  lines.push(`  Total de Entradas : ${fmt(totalEntry).padStart(14)}`);
+  lines.push(`  Total de Saídas   : ${fmt(totalExit).padStart(14)}`);
+  lines.push(`  Saldo Atual       : ${fmt(balance).padStart(14)}`);
+  lines.push('');
+  lines.push(hr);
+  lines.push(`  RESUMO DE HOJE (${today})`);
+  lines.push(hr);
+  lines.push(`  Entradas Hoje : ${fmt(todayEntry).padStart(16)}`);
+  lines.push(`  Saídas Hoje   : ${fmt(todayExit).padStart(16)}`);
+  lines.push(`  Resultado     : ${fmt(todayEntry - todayExit).padStart(16)}`);
+  lines.push('');
+  lines.push(hr);
+  lines.push('  ÚLTIMOS 20 LANÇAMENTOS');
+  lines.push(hr);
+
+  const recent = all.slice(0, 20);
+  if (recent.length === 0) {
+    lines.push('  Nenhum lançamento registrado.');
+  } else {
+    recent.forEach(t => {
+      const sinal = t.type === 'entry' ? '+ ' : '- ';
+      const val   = fmt(t.value).padStart(12);
+      const data  = `${t.dateStr} ${t.timeStr}`;
+      lines.push(`  ${sinal}${val}  ${data}  ${t.desc.substring(0,22).padEnd(22)}  [${t.user}]`);
+    });
+  }
+
+  lines.push('');
+  lines.push(hr);
+  lines.push('  Caixa VIGI — Sistema de Controle Financeiro');
+
+  document.getElementById('report-content').textContent = lines.join('\n');
+  document.getElementById('modal-report').classList.add('open');
+}
+
+function printReport() {
+  const content = document.getElementById('report-content').textContent;
+  const win = window.open('', '_blank', 'width=700,height=600');
+  win.document.write(`<pre style="font-family:monospace;padding:30px;font-size:13px;background:#fff;color:#111;">${content}</pre>`);
+  win.document.close();
+  win.print();
+}
+
+/* ===========================
+   TOAST
+=========================== */
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity='0'; toast.style.transform='translateX(40px)'; toast.style.transition='all 0.3s'; }, 2800);
+  setTimeout(() => toast.remove(), 3200);
+}
+
+/* ===========================
+   UTILS
+=========================== */
+function fmt(val) {
+  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+/* Close on Escape */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open, .confirm-overlay.open')
+      .forEach(m => m.classList.remove('open'));
+  }
+});
+</script>
+</body>
+</html>
