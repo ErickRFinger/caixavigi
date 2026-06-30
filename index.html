@@ -1212,7 +1212,21 @@ const SESSION_KEY = 'caixavigi_session';
 // Supabase Configuration
 const SUPABASE_URL = "https://oxbgbzrdtzhubdmyskvk.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94YmdienJkdHpodWJkbXlza3ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTQ2MTEsImV4cCI6MjA5ODQzMDYxMX0.VMzYEzWscDMTjqj2HmWESskC33Gk9NzcWiXaThReGlU";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let supabase = null;
+let useCloud = false;
+
+try {
+  if (typeof window.supabase !== 'undefined') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    useCloud = true;
+  } else if (typeof supabase !== 'undefined') {
+    supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    useCloud = true;
+  }
+} catch (err) {
+  console.warn("Erro ao iniciar Supabase. Usando modo offline.", err);
+}
 
 let currentUser = null;
 let transactions = [];
@@ -1372,25 +1386,43 @@ function mapDbToTx(db) {
 }
 
 async function loadTransactions() {
-  try {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    transactions = (data || []).map(mapDbToTx);
-  } catch(e) {
-    console.error("Erro ao carregar transações do Supabase:", e);
-    showToast("Erro ao conectar com a nuvem.", "error");
-    transactions = [];
+  if (useCloud && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      transactions = (data || []).map(mapDbToTx);
+    } catch(e) {
+      console.error("Erro ao carregar transações do Supabase, usando local:", e);
+      showToast("Modo Offline: Carregando dados locais.", "error");
+      loadLocalTransactions();
+    }
+  } else {
+    loadLocalTransactions();
   }
   renderAll();
 }
 
+function loadLocalTransactions() {
+  try {
+    transactions = JSON.parse(localStorage.getItem('caixavigi_transactions')) || [];
+  } catch(e) {
+    transactions = [];
+  }
+}
+
+function saveLocalTransactions() {
+  localStorage.setItem('caixavigi_transactions', JSON.stringify(transactions));
+}
+
 function saveTransactions() {
-  // No-op: saved directly to database in real time
+  if (!useCloud) {
+    saveLocalTransactions();
+  }
 }
 
 async function addTransaction(type, value, desc, cat, obs) {
@@ -1408,42 +1440,63 @@ async function addTransaction(type, value, desc, cat, obs) {
     timeStr: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
   };
 
-  try {
-    const dbRow = mapTxToDb(tx);
-    const { error } = await supabase
-      .from('transactions')
-      .insert([dbRow]);
-    
-    if (error) throw error;
+  if (useCloud && supabase) {
+    try {
+      const dbRow = mapTxToDb(tx);
+      const { error } = await supabase
+        .from('transactions')
+        .insert([dbRow]);
+      
+      if (error) throw error;
 
-    transactions.unshift(tx);
-    renderAll();
-    showToast(
-      type === 'entry' ? 'Entrada registrada com sucesso!' : 'Saída registrada com sucesso!',
-      type === 'entry' ? 'success' : 'error'
-    );
-  } catch (e) {
-    console.error("Erro ao salvar transação no Supabase:", e);
-    showToast("Erro ao salvar lançamento na nuvem.", "error");
+      transactions.unshift(tx);
+      renderAll();
+      showToast(
+        type === 'entry' ? 'Entrada registrada com sucesso!' : 'Saída registrada com sucesso!',
+        type === 'entry' ? 'success' : 'error'
+      );
+      return;
+    } catch (e) {
+      console.error("Erro ao salvar transação no Supabase, usando local:", e);
+      showToast("Erro na nuvem. Salvo localmente.", "error");
+    }
   }
+
+  // Local fallback
+  transactions.unshift(tx);
+  saveLocalTransactions();
+  renderAll();
+  showToast(
+    type === 'entry' ? 'Entrada registrada localmente!' : 'Saída registrada localmente!',
+    type === 'entry' ? 'success' : 'error'
+  );
 }
 
 async function deleteTransaction(id) {
-  try {
-    const { error } = await supabase
-      .from('transactions')
-      .delete()
-      .eq('id', String(id));
-      
-    if (error) throw error;
+  if (useCloud && supabase) {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', String(id));
+        
+      if (error) throw error;
 
-    transactions = transactions.filter(t => String(t.id) !== String(id));
-    renderAll();
-    showToast('Lançamento excluído.', 'error');
-  } catch (e) {
-    console.error("Erro ao excluir transação no Supabase:", e);
-    showToast("Erro ao excluir lançamento na nuvem.", "error");
+      transactions = transactions.filter(t => String(t.id) !== String(id));
+      renderAll();
+      showToast('Lançamento excluído.', 'error');
+      return;
+    } catch (e) {
+      console.error("Erro ao excluir transação no Supabase:", e);
+      showToast("Erro na nuvem. Excluído localmente.", "error");
+    }
   }
+
+  // Local fallback
+  transactions = transactions.filter(t => String(t.id) !== String(id));
+  saveLocalTransactions();
+  renderAll();
+  showToast('Lançamento local excluído.', 'error');
 }
 
 /* ===========================
@@ -1833,23 +1886,33 @@ async function submitEdit() {
     t.cat = 'Saída';
   }
 
-  try {
-    const dbRow = mapTxToDb(t);
-    const { error } = await supabase
-      .from('transactions')
-      .update(dbRow)
-      .eq('id', String(id));
+  if (useCloud && supabase) {
+    try {
+      const dbRow = mapTxToDb(t);
+      const { error } = await supabase
+        .from('transactions')
+        .update(dbRow)
+        .eq('id', String(id));
 
-    if (error) throw error;
+      if (error) throw error;
 
-    transactions[idx] = t;
-    renderAll();
-    closeModal('edit');
-    showToast('Lançamento atualizado com sucesso!', 'success');
-  } catch (e) {
-    console.error("Erro ao atualizar transação no Supabase:", e);
-    showToast("Erro ao salvar alterações na nuvem.", "error");
+      transactions[idx] = t;
+      renderAll();
+      closeModal('edit');
+      showToast('Lançamento atualizado com sucesso!', 'success');
+      return;
+    } catch (e) {
+      console.error("Erro ao atualizar transação no Supabase, usando local:", e);
+      showToast("Erro na nuvem. Alteração salva localmente.", "error");
+    }
   }
+
+  // Local fallback
+  transactions[idx] = t;
+  saveLocalTransactions();
+  renderAll();
+  closeModal('edit');
+  showToast('Lançamento local atualizado!', 'success');
 }
 
 /* Close modals on overlay click */
