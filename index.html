@@ -88,6 +88,76 @@
     }
     .btn-theme:hover { background: rgba(124,92,252,0.18); border-color: var(--primary); }
 
+    /* Fechar Caixa button */
+    .btn-close-cash {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 700;
+      border: 1.5px solid rgba(245,158,11,0.5);
+      background: rgba(245,158,11,0.12); color: #f59e0b;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all 0.2s ease; flex-shrink: 0; white-space: nowrap;
+    }
+    .btn-close-cash:hover {
+      background: rgba(245,158,11,0.25); border-color: var(--yellow);
+      box-shadow: 0 0 14px rgba(245,158,11,0.3);
+    }
+    @media (max-width: 640px) {
+      .btn-close-cash span.label { display: none; }
+      .btn-close-cash { padding: 7px 10px; }
+    }
+
+    /* Closed-day banner */
+    .closing-banner {
+      background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.06));
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px;
+      font-size: 0.83rem; color: #fbbf24;
+      animation: fadeIn 0.4s ease;
+    }
+    .closing-banner .cb-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .closing-banner .cb-text { flex: 1; line-height: 1.5; }
+    .closing-banner .cb-text strong { color: var(--yellow); }
+    .closing-banner .cb-edit-note {
+      font-size: 0.74rem; color: var(--text-muted);
+      margin-top: 3px; display: block;
+    }
+    .closing-banner.hidden { display: none; }
+
+    /* Closed period tag on day summary */
+    .closed-period-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.3px;
+      background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);
+      color: #f59e0b; border-radius: 50px; padding: 2px 9px;
+      margin-bottom: 10px;
+    }
+
+    /* Close-cash modal specifics */
+    .close-cash-summary {
+      background: rgba(0,0,0,0.18);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .ccs-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border);
+    }
+    .ccs-row.entry-row { background: rgba(34,197,94,0.07); border-color: rgba(34,197,94,0.2); }
+    .ccs-row.exit-row  { background: rgba(239,68,68,0.07);  border-color: rgba(239,68,68,0.2); }
+    .ccs-row.bal-row   { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.25); }
+    .ccs-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+    .ccs-val   { font-size: 1rem; font-weight: 800; }
+    .close-cash-warning {
+      font-size: 0.78rem; color: var(--text-muted);
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 8px; padding: 10px 12px; line-height: 1.6;
+    }
+
     body {
       font-family: 'Inter', sans-serif;
       background: var(--bg);
@@ -405,6 +475,11 @@
       color: #fff; box-shadow: 0 6px 24px rgba(239,68,68,0.4);
     }
     .action-btn-exit:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(239,68,68,0.55); }
+    .action-btn-close {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff; box-shadow: 0 6px 24px rgba(245,158,11,0.4);
+    }
+    .action-btn-close:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(245,158,11,0.55); }
     .action-btn:active { transform: translateY(0) scale(0.98); }
 
     /* HISTORY SECTION */
@@ -935,6 +1010,12 @@
   <!-- MAIN -->
   <main class="main">
 
+    <!-- CLOSING BANNER (shown after a cash closing) -->
+    <div class="closing-banner hidden" id="closing-banner">
+      <div class="cb-icon">🔒</div>
+      <div class="cb-text" id="closing-banner-text">Caixa fechado.</div>
+    </div>
+
     <!-- CARDS -->
     <div class="cards-grid">
       <div class="card card-balance">
@@ -979,14 +1060,25 @@
     </div>
 
     <!-- ACTION BUTTONS -->
-    <div class="action-section">
-      <button class="action-btn action-btn-entry" onclick="openModal('entry')" id="btn-entry">
+    <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <button class="action-btn action-btn-entry" onclick="openModal('entry')" id="btn-entry" style="flex:1;min-width:160px;">
         <span class="icon">➕</span>
         Lançar Entrada
       </button>
-      <button class="action-btn action-btn-exit" onclick="openModal('exit')" id="btn-exit">
+      <button class="action-btn action-btn-exit" onclick="openModal('exit')" id="btn-exit" style="flex:1;min-width:160px;">
         <span class="icon">➖</span>
         Lançar Saída
+      </button>
+    </div>
+    <div style="margin-bottom:28px;">
+      <button onclick="openCloseCashModal()" id="btn-close-cash-main"
+        style="width:100%;padding:16px 28px;border-radius:14px;font-size:1rem;font-weight:700;
+               display:flex;align-items:center;justify-content:center;gap:10px;
+               cursor:pointer;border:none;font-family:'Inter',sans-serif;letter-spacing:0.2px;
+               background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;
+               box-shadow:0 6px 24px rgba(245,158,11,0.4);transition:all 0.2s ease;">
+        <span style="font-size:1.3rem;">🔒</span>
+        Fechar Caixa do Dia
       </button>
     </div>
 
@@ -1192,6 +1284,65 @@
   </div>
 </div>
 
+<!-- =========================================
+     MODAL: FECHAR CAIXA
+========================================== -->
+<div class="modal-overlay" id="modal-close-cash">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">
+        🔒 Fechar Caixa
+        <span class="modal-badge" style="background:rgba(245,158,11,0.2);color:#f59e0b">Encerramento</span>
+      </div>
+      <button class="btn-close" onclick="closeModal('close-cash')">✕</button>
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">Resumo do período atual (desde o último fechamento):</p>
+
+    <div class="close-cash-summary" id="close-cash-summary">
+      <div class="ccs-row entry-row">
+        <span class="ccs-label">📈 Total de Entradas</span>
+        <span class="ccs-val" id="ccs-entry" style="color:var(--green)">R$ 0,00</span>
+      </div>
+      <div class="ccs-row exit-row">
+        <span class="ccs-label">📉 Total de Saídas</span>
+        <span class="ccs-val" id="ccs-exit" style="color:var(--red)">R$ 0,00</span>
+      </div>
+      <div class="ccs-row bal-row">
+        <span class="ccs-label">💰 Saldo do Período</span>
+        <span class="ccs-val" id="ccs-balance" style="color:var(--yellow)">R$ 0,00</span>
+      </div>
+      <div class="ccs-row" style="border-color:rgba(255,255,255,0.06)">
+        <span class="ccs-label">📋 Nº de Transações</span>
+        <span class="ccs-val" id="ccs-count" style="color:var(--text)">0</span>
+      </div>
+    </div>
+
+    <div class="close-cash-warning">
+      ⚠️ Ao confirmar, o <strong>saldo é zerado</strong> e o novo período começa do zero. Os lançamentos anteriores ficam <strong>preservados no histórico</strong> e ainda podem ser <strong>editados, excluídos ou complementados</strong> normalmente a qualquer momento.
+    </div>
+
+    <div class="form-group" style="margin-top:16px;margin-bottom:0">
+      <label style="display:block;font-size:0.78rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+        💵 Troco para o próximo período (opcional)
+      </label>
+      <input type="number" id="troco-value" placeholder="0,00 — deixe vazio se não houver" min="0" step="0.01"
+        style="border-color:rgba(245,158,11,0.35);" />
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-top:5px;line-height:1.5;">
+        Se informado, será lançado automaticamente como “Entrada — Troco do caixa anterior” no novo período.
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('close-cash')">Cancelar</button>
+      <button class="btn" id="btn-confirm-close-cash" onclick="confirmCloseCash()"
+        style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;box-shadow:0 4px 16px rgba(245,158,11,0.35);flex:1">
+        🔒 Confirmar Fechamento
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast Container -->
 <div class="toast-container" id="toast-container"></div>
 
@@ -1232,6 +1383,9 @@ let currentUser = null;
 let transactions = [];
 let currentFilter = 'all';
 let pendingDeleteId = null;
+
+// Last cash closing record — { id, closed_at, closed_by, entry_total, exit_total, balance, tx_count }
+let lastClosing = null;
 
 // Calendar state
 let calYear  = new Date().getFullYear();
@@ -1347,6 +1501,56 @@ function showApp() {
   }
   updateHeaderDate();
   loadTransactions();
+
+  // Garantia extra: criar botão Fechar Caixa via JS se não existir ou estiver oculto
+  (function ensureFecharCaixaBtn() {
+    let btn = document.getElementById('btn-close-cash-main');
+    if (!btn) {
+      // Criar container e botão do zero
+      const container = document.createElement('div');
+      container.id = 'fechar-caixa-container';
+      container.style.cssText = 'margin-bottom:28px;';
+
+      btn = document.createElement('button');
+      btn.id = 'btn-close-cash-main';
+      btn.onclick = openCloseCashModal;
+      container.appendChild(btn);
+
+      // Inserir antes do calendário
+      const calSection = document.querySelector('.calendar-section');
+      if (calSection) {
+        calSection.parentNode.insertBefore(container, calSection);
+      } else {
+        const main = document.querySelector('.main');
+        if (main) main.appendChild(container);
+      }
+    }
+
+    // Garantir estilo e visibilidade
+    const s = [
+      'display:flex',
+      'width:100%',
+      'padding:16px 28px',
+      'border-radius:14px',
+      'font-size:1rem',
+      'font-weight:700',
+      'align-items:center',
+      'justify-content:center',
+      'gap:10px',
+      'cursor:pointer',
+      'border:none',
+      'font-family:Inter,sans-serif',
+      'letter-spacing:0.2px',
+      'background:linear-gradient(135deg,#f59e0b,#d97706)',
+      'color:#fff',
+      'box-shadow:0 6px 24px rgba(245,158,11,0.4)',
+      'transition:all 0.2s ease',
+      'margin-top:0',
+    ].join(';');
+    btn.setAttribute('style', s);
+    btn.innerHTML = '<span style="font-size:1.3rem">🔒</span>&nbsp; Fechar Caixa do Dia';
+    btn.onclick = openCloseCashModal;
+  })();
 }
 
 /* ===========================
@@ -1388,6 +1592,9 @@ function mapDbToTx(db) {
 async function loadTransactions() {
   if (useCloud && supabaseClient) {
     try {
+      // Load last closing first
+      await loadLastClosing();
+
       const { data, error } = await supabaseClient
         .from('transactions')
         .select('*')
@@ -1403,8 +1610,58 @@ async function loadTransactions() {
     }
   } else {
     loadLocalTransactions();
+    loadLastClosingLocal();
   }
   renderAll();
+  updateClosingBanner();
+}
+
+/* ===========================
+   CASH CLOSING HELPERS
+=========================== */
+async function loadLastClosing() {
+  if (!useCloud || !supabaseClient) { loadLastClosingLocal(); return; }
+  try {
+    const { data, error } = await supabaseClient
+      .from('cash_closings')
+      .select('*')
+      .order('closed_at', { ascending: false })
+      .limit(1);
+    if (error) throw error;
+    lastClosing = (data && data.length > 0) ? data[0] : null;
+    if (lastClosing) localStorage.setItem('caixavigi_last_closing', JSON.stringify(lastClosing));
+  } catch(e) {
+    console.warn('Erro ao buscar fechamento, usando local:', e);
+    loadLastClosingLocal();
+  }
+}
+
+function loadLastClosingLocal() {
+  try {
+    const raw = localStorage.getItem('caixavigi_last_closing');
+    lastClosing = raw ? JSON.parse(raw) : null;
+  } catch(e) { lastClosing = null; }
+}
+
+/* Returns only transactions that happened AFTER the last closing */
+function getActiveTx() {
+  if (!lastClosing) return transactions;
+  const cutoff = new Date(lastClosing.closed_at).getTime();
+  return transactions.filter(t => new Date(t.date).getTime() > cutoff);
+}
+
+function updateClosingBanner() {
+  const banner = document.getElementById('closing-banner');
+  const bannerText = document.getElementById('closing-banner-text');
+  if (!banner) return;
+  if (!lastClosing) { banner.classList.add('hidden'); return; }
+  banner.classList.remove('hidden');
+  const closedDate = new Date(lastClosing.closed_at).toLocaleString('pt-BR');
+  const by = lastClosing.closed_by || 'sistema';
+  bannerText.innerHTML =
+    `<strong>Período anterior fechado</strong> em ${closedDate} por <strong>${escHtml(by)}</strong>. ` +
+    `Saldo encerrado: <strong>${fmt(parseFloat(lastClosing.balance || 0))}</strong>. Novo período ativo. ` +
+    `<span class="cb-edit-note">✏️ Lançamentos anteriores ainda podem ser editados, excluídos ou complementados normalmente.</span>`;
 }
 
 function loadLocalTransactions() {
@@ -1508,10 +1765,11 @@ function getToday() {
 
 function renderStats() {
   const today = getToday();
-  const todayTx = transactions.filter(t => t.dateStr === today);
+  const activeTx = getActiveTx();          // Only tx after last closing
+  const todayTx  = activeTx.filter(t => t.dateStr === today);
 
-  const totalEntry = transactions.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
-  const totalExit  = transactions.filter(t => t.type === 'exit').reduce((s, t)  => s + t.value, 0);
+  const totalEntry = activeTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
+  const totalExit  = activeTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
   const balance    = totalEntry - totalExit;
 
   const todayEntry = todayTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
@@ -1519,9 +1777,18 @@ function renderStats() {
   const todayEntryCount = todayTx.filter(t => t.type === 'entry').length;
   const todayExitCount  = todayTx.filter(t => t.type === 'exit').length;
 
+  const periodLabel = lastClosing ? 'Período atual' : 'Saldo Atual';
+
   document.getElementById('card-balance').textContent = fmt(balance);
   document.getElementById('card-balance').className = 'card-value ' + (balance >= 0 ? 'green' : 'red');
-  document.getElementById('card-balance-sub').textContent = `${transactions.length} transação(ões) no total`;
+  document.getElementById('card-balance-sub').textContent =
+    lastClosing
+      ? `${activeTx.length} tx no período atual`
+      : `${transactions.length} transação(ões) no total`;
+
+  // Update card label/period for balance card
+  const balPeriodEl = document.querySelector('.card-balance .card-period');
+  if (balPeriodEl) balPeriodEl.textContent = periodLabel;
 
   document.getElementById('card-entries').textContent = fmt(todayEntry);
   document.getElementById('card-entries-sub').textContent = `${todayEntryCount} lançamento(s) hoje`;
@@ -1529,7 +1796,7 @@ function renderStats() {
   document.getElementById('card-exits').textContent = fmt(todayExit);
   document.getElementById('card-exits-sub').textContent = `${todayExitCount} lançamento(s) hoje`;
 
-  document.getElementById('card-count').textContent = transactions.length;
+  document.getElementById('card-count').textContent = activeTx.length;
   document.getElementById('card-count-sub').textContent = `${todayTx.length} hoje`;
 }
 
@@ -1723,8 +1990,20 @@ function selectCalDay(dateStr, day) {
   const exitCount  = dayTx.filter(t => t.type === 'exit').length;
   const balColor   = balance >= 0 ? 'var(--green)' : 'var(--red)';
 
+  // Check if this date belongs to a closed period
+  const isClosedPeriod = lastClosing && (() => {
+    const [dd, mm, yyyy] = dateStr.split('/');
+    const dayTime = new Date(parseInt(yyyy), parseInt(mm)-1, parseInt(dd), 23, 59, 59).getTime();
+    return dayTime <= new Date(lastClosing.closed_at).getTime();
+  })();
+
+  const closedTag = isClosedPeriod
+    ? `<div class="closed-period-tag">🔒 Período fechado &nbsp;·&nbsp; ✏️ ainda editável</div>`
+    : '';
+
   if (dayTx.length === 0) {
     document.getElementById('day-summary-content').innerHTML = `
+      ${closedTag}
       <div class="day-summary-date">${dayName.split(',')[0] || dateStr}</div>
       <div class="day-no-select" style="padding: 20px 0">
         <div class="nsi">📭</div>
@@ -1732,6 +2011,7 @@ function selectCalDay(dateStr, day) {
       </div>`;
   } else {
     document.getElementById('day-summary-content').innerHTML = `
+      ${closedTag}
       <div class="day-summary-date">${dateStr}</div>
       <div class="day-summary-rows">
         <div class="day-summary-row entry-row">
@@ -1941,6 +2221,91 @@ function confirmDelete() {
     pendingDeleteId = null;
   }
   document.getElementById('confirm-del').classList.remove('open');
+}
+
+/* ===========================
+   FECHAR CAIXA
+=========================== */
+function openCloseCashModal() {
+  const activeTx = getActiveTx();
+  const totalEntry = activeTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
+  const totalExit  = activeTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
+  const balance    = totalEntry - totalExit;
+
+  document.getElementById('ccs-entry').textContent   = fmt(totalEntry);
+  document.getElementById('ccs-exit').textContent    = fmt(totalExit);
+  document.getElementById('ccs-balance').textContent = fmt(balance);
+  document.getElementById('ccs-balance').style.color = balance >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('ccs-count').textContent   = activeTx.length;
+
+  // Sugerir troco = saldo do período se positivo
+  const trocoEl = document.getElementById('troco-value');
+  trocoEl.value = '';
+
+  document.getElementById('modal-close-cash').classList.add('open');
+  setTimeout(() => trocoEl.focus(), 200);
+}
+
+async function confirmCloseCash() {
+  const activeTx = getActiveTx();
+  const totalEntry = activeTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
+  const totalExit  = activeTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
+  const balance    = totalEntry - totalExit;
+  const now        = new Date().toISOString();
+
+  const closingRecord = {
+    closed_at:   now,
+    closed_by:   currentUser,
+    entry_total: totalEntry,
+    exit_total:  totalExit,
+    balance:     balance,
+    tx_count:    activeTx.length
+  };
+
+  const btn = document.getElementById('btn-confirm-close-cash');
+  btn.disabled = true;
+  btn.textContent = '⏳ Fechando...';
+
+  if (useCloud && supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('cash_closings')
+        .insert([closingRecord])
+        .select()
+        .single();
+      if (error) throw error;
+      lastClosing = data;
+      localStorage.setItem('caixavigi_last_closing', JSON.stringify(lastClosing));
+    } catch(e) {
+      console.error('Erro ao registrar fechamento no Supabase, salvando local:', e);
+      closingRecord.id = 'local-' + Date.now();
+      lastClosing = closingRecord;
+      localStorage.setItem('caixavigi_last_closing', JSON.stringify(lastClosing));
+      showToast('Fechamento salvo localmente (erro na nuvem).', 'error');
+    }
+  } else {
+    closingRecord.id = 'local-' + Date.now();
+    lastClosing = closingRecord;
+    localStorage.setItem('caixavigi_last_closing', JSON.stringify(lastClosing));
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🔒 Confirmar Fechamento';
+
+  closeModal('close-cash');
+  renderAll();
+  updateClosingBanner();
+
+  // Se informou troco, lançar automaticamente como entrada do novo período
+  const trocoVal = parseFloat(document.getElementById('troco-value').value);
+  if (trocoVal > 0) {
+    setTimeout(() => {
+      addTransaction('entry', trocoVal, 'Troco do caixa anterior', 'Outras', 'Abertura do novo período');
+    }, 300); // pequeno delay para garantir que lastClosing já foi salvo
+    showToast(`Caixa fechado! Troco de ${fmt(trocoVal)} lançado como entrada. 🎉`, 'success');
+  } else {
+    showToast('Caixa fechado com sucesso! Novo período iniciado zerado. 🎉', 'success');
+  }
 }
 
 /* ===========================
