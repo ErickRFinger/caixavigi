@@ -100,7 +100,7 @@
     .orb-3 { width: 300px; height: 300px; background: #f59e0b; top: 40%; left: 50%; transform: translateX(-50%); }
 
     /* SCREENS */
-    .screen { display: none; position: relative; z-index: 1; }
+    .screen { display: none; position: relative; z-index: 1; width: 100%; }
     .screen.active { display: flex; }
 
     /* LOGIN SCREEN */
@@ -109,6 +109,14 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
+      width: 100%;
+    }
+
+    /* APP SCREEN */
+    #app-screen {
+      flex-direction: column;
+      min-height: 100vh;
+      width: 100%;
     }
     .login-card {
       background: var(--glass);
@@ -236,6 +244,8 @@
       padding: 14px 24px;
       display: flex; align-items: center; justify-content: space-between;
       gap: 16px;
+      width: 100%;
+      flex-shrink: 0;
     }
     .header-left { display: flex; align-items: center; gap: 14px; }
     .header-title { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.3px; }
@@ -264,7 +274,7 @@
     .btn-theme:hover { background: rgba(124,92,252,0.18); border-color: var(--primary); }
 
     /* MAIN CONTENT */
-    .main { padding: 24px 20px; max-width: 1140px; margin: 0 auto; width: 100%; }
+    .main { padding: 24px 20px; max-width: 1140px; margin: 0 auto; width: 100%; flex: 1; }
 
     /* CLOSING BANNER */
     .closing-banner {
@@ -943,8 +953,8 @@
           <div class="card-icon purple">💰</div>
           <span class="card-period" id="card-balance-period">Saldo do Período</span>
         </div>
-        <div class="card-label">Saldo Final do Período</div>
-        <div class="card-value purple" id="card-balance">R$ 0,00</div>
+        <div class="card-label">Saldo do Período</div>
+        <div class="card-value green" id="card-balance">R$ 0,00</div>
         <div class="card-sub" id="card-balance-sub">Carregando saldo...</div>
       </div>
 
@@ -1949,15 +1959,23 @@ function renderStats() {
 
   // Card 1: Saldo do Período
   const balEl = document.getElementById('card-balance');
-  balEl.textContent = fmt(metrics.finalBalance);
-  balEl.className = 'card-value ' + (metrics.finalBalance >= 0 ? 'green' : 'red');
-
   const balPeriodEl = document.getElementById('card-balance-period');
-  if (balPeriodEl) balPeriodEl.textContent = currentPeriod.preset === 'today' ? 'Saldo Atual' : 'Saldo do Período';
-
   const balSubEl = document.getElementById('card-balance-sub');
-  if (balSubEl) {
-    balSubEl.innerHTML = `Inicial: <strong>${fmt(metrics.initialBalance)}</strong> &bull; Mov.: <strong>${metrics.periodResult >= 0 ? '+' : ''}${fmt(metrics.periodResult)}</strong>`;
+
+  if (currentPeriod.preset === 'all') {
+    balEl.textContent = fmt(metrics.finalBalance);
+    balEl.className = 'card-value ' + (metrics.finalBalance >= 0 ? 'purple' : 'red');
+    if (balPeriodEl) balPeriodEl.textContent = 'Histórico Geral';
+    if (balSubEl) balSubEl.innerHTML = `Total acumulado de todas as transações`;
+  } else {
+    balEl.textContent = fmt(metrics.periodResult);
+    balEl.className = 'card-value ' + (metrics.periodResult >= 0 ? 'green' : 'red');
+    if (balPeriodEl) {
+      balPeriodEl.textContent = currentPeriod.preset === 'today' ? 'Saldo de Hoje' : 'Saldo do Período';
+    }
+    if (balSubEl) {
+      balSubEl.innerHTML = `Entradas: <strong>+${fmt(metrics.entriesSum)}</strong> &bull; Saídas: <strong>-${fmt(metrics.exitsSum)}</strong>`;
+    }
   }
 
   // Card 2: Entradas no Período
@@ -2198,6 +2216,51 @@ function renderCalendar() {
   }
 
   gridEl.innerHTML = html;
+  updateDaySummary(selectedCalDate);
+}
+
+function updateDaySummary(dateStr) {
+  const contentEl = document.getElementById('day-summary-content');
+  if (!contentEl) return;
+
+  const targetDate = dateStr || getTodayBR();
+  const isTargetToday = targetDate === getTodayBR();
+  const dayTx = transactions.filter(t => t.dateStr === targetDate);
+  const entryTotal = dayTx.filter(t => t.type === 'entry').reduce((s,t) => s + (parseFloat(t.value)||0), 0);
+  const exitTotal  = dayTx.filter(t => t.type === 'exit').reduce((s,t)  => s + (parseFloat(t.value)||0), 0);
+  const balance    = entryTotal - exitTotal;
+  const entryCount = dayTx.filter(t => t.type === 'entry').length;
+  const exitCount  = dayTx.filter(t => t.type === 'exit').length;
+  const balColor   = balance >= 0 ? 'var(--green)' : 'var(--red)';
+
+  const label = isTargetToday ? `Hoje (${targetDate})` : `Dia ${targetDate}`;
+
+  contentEl.innerHTML = `
+    <div class="day-summary-date">${label}</div>
+    <div class="day-summary-rows">
+      <div class="day-summary-row entry-row">
+        <span>📈 Entradas (${entryCount})</span>
+        <span style="color:var(--green)">+${fmt(entryTotal)}</span>
+      </div>
+      <div class="day-summary-row exit-row">
+        <span>📉 Saídas (${exitCount})</span>
+        <span style="color:var(--red)">-${fmt(exitTotal)}</span>
+      </div>
+      <div class="day-summary-row bal-row">
+        <span>💰 Resultado do Dia</span>
+        <span style="color:${balColor}">${balance >= 0 ? '+' : ''}${fmt(balance)}</span>
+      </div>
+    </div>
+    ${dateStr ? `
+      <button class="btn btn-ghost btn-sm" onclick="selectCalDay('${dateStr}', 0)" style="width:100%;margin-top:6px;">
+        ✕ Limpar Seleção do Dia
+      </button>
+    ` : `
+      <div style="font-size:0.73rem;color:var(--text-muted);text-align:center;">
+        Clique em qualquer outro dia no calendário para filtrar
+      </div>
+    `}
+  `;
 }
 
 function calPrevMonth() {
@@ -2217,11 +2280,7 @@ function selectCalDay(dateStr, day) {
   if (selectedCalDate === dateStr) {
     selectedCalDate = null;
     setPeriodPreset('today');
-    document.getElementById('day-summary-content').innerHTML = `
-      <div class="day-no-select">
-        <div class="nsi">📅</div>
-        <p>Selecione um dia no calendário para ver o detalhamento.</p>
-      </div>`;
+    updateDaySummary(null);
     return;
   }
 
@@ -2240,34 +2299,7 @@ function selectCalDay(dateStr, day) {
   document.getElementById('period-end-input').value = isoDate;
   document.getElementById('period-active-label').textContent = currentPeriod.label;
 
-  // Day summary calculation
-  const dayTx = transactions.filter(t => t.dateStr === dateStr);
-  const entryTotal = dayTx.filter(t => t.type === 'entry').reduce((s,t) => s + (parseFloat(t.value)||0), 0);
-  const exitTotal  = dayTx.filter(t => t.type === 'exit').reduce((s,t)  => s + (parseFloat(t.value)||0), 0);
-  const balance    = entryTotal - exitTotal;
-  const entryCount = dayTx.filter(t => t.type === 'entry').length;
-  const exitCount  = dayTx.filter(t => t.type === 'exit').length;
-  const balColor   = balance >= 0 ? 'var(--green)' : 'var(--red)';
-
-  document.getElementById('day-summary-content').innerHTML = `
-    <div class="day-summary-date">${dateStr}</div>
-    <div class="day-summary-rows">
-      <div class="day-summary-row entry-row">
-        <span>📈 Entradas (${entryCount})</span>
-        <span style="color:var(--green)">${fmt(entryTotal)}</span>
-      </div>
-      <div class="day-summary-row exit-row">
-        <span>📉 Saídas (${exitCount})</span>
-        <span style="color:var(--red)">${fmt(exitTotal)}</span>
-      </div>
-      <div class="day-summary-row bal-row">
-        <span>💰 Resultado do Dia</span>
-        <span style="color:${balColor}">${fmt(balance)}</span>
-      </div>
-    </div>
-    <button class="btn btn-ghost btn-sm" onclick="selectCalDay('${dateStr}', ${day})" style="width:100%;margin-top:6px;">
-      ✕ Limpar Seleção do Dia
-    </button>`;
+  updateDaySummary(dateStr);
 
   renderCalendar();
   renderHistory();
@@ -2469,19 +2501,52 @@ function confirmDelete() {
 /* ===========================
    FECHAR CAIXA & CONFERÊNCIA FÍSICA (REQUISITO 3)
 =========================== */
-function openCloseCashModal() {
-  // Find transactions since last closing
+function getLastClosingRecord() {
+  // 1. Check in transactions for type === 'closing'
   const closings = transactions.filter(t => t.type === 'closing')
-    .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  
-  const lastCl = closings.length > 0 ? closings[0] : null;
-  const cutoffTime = lastCl ? new Date(lastCl.date).getTime() : 0;
-  const openingBalance = lastCl ? parseFloat(lastCl.value) || 0 : 0;
+    .sort((a,b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+  if (closings.length > 0) return closings[0];
+
+  // 2. Check in localStorage
+  try {
+    const raw = localStorage.getItem('caixavigi_last_closing');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && (parsed.closed_at || parsed.date)) {
+        return {
+          id: parsed.id || 'local-closing',
+          type: 'closing',
+          value: parseFloat(parsed.balance || parsed.value) || 0,
+          date: parsed.closed_at || parsed.date,
+          user: parsed.closed_by || parsed.user || 'sistema',
+          obs: 'Fechamento anterior recuperado'
+        };
+      }
+    }
+  } catch(e) {}
+
+  // 3. Fallback: Start of today (midnight)
+  const todayStart = new Date();
+  todayStart.setHours(0,0,0,0);
+  return {
+    id: 'today-start',
+    type: 'closing',
+    value: 0,
+    date: todayStart.toISOString(),
+    user: 'sistema',
+    obs: 'Início do dia'
+  };
+}
+
+function openCloseCashModal() {
+  const lastCl = getLastClosingRecord();
+  const cutoffTime = new Date(lastCl.date || 0).getTime();
+  const openingBalance = parseFloat(lastCl.value) || 0;
 
   // Active transactions are those after cutoffTime
   const activeTx = transactions.filter(t => {
     if (t.type === 'closing' || t.type === 'opening') return false;
-    const tTime = new Date(t.date).getTime();
+    const tTime = new Date(t.date || 0).getTime();
     return tTime > cutoffTime;
   });
 
