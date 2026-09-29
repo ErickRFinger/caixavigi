@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Caixa VIGI — Sistema Financeiro</title>
-  <meta name="description" content="Sistema de controle de caixa para Carol, Camili e Keithi." />
+  <title>Caixa VIGI — Sistema Financeiro e Conferência</title>
+  <meta name="description" content="Sistema de controle e conferência de caixa para Carol, Camili e Keithi." />
   <link rel="icon" type="image/png" href="vigi.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -26,6 +26,7 @@
       --red:       #ef4444;
       --red2:      #dc2626;
       --yellow:    #f59e0b;
+      --yellow2:   #d97706;
       --text:      #f1f5f9;
       --text-muted:#94a3b8;
       --radius:    14px;
@@ -50,15 +51,14 @@
       background: rgba(240,242,248,0.92);
       border-bottom-color: rgba(0,0,0,0.1);
     }
-    body.light .modal { background: #ffffff; }
-    body.light .report-content { background: rgba(0,0,0,0.04); color: #475569; }
+    body.light .modal { background: #ffffff; color: #1e2235; }
     body.light .confirm-box { background: #ffffff; }
     body.light select option { background: #ffffff; color: #1e2235; }
-    body.light input, body.light select {
+    body.light input, body.light select, body.light textarea {
       background: rgba(0,0,0,0.04);
       color: #1e2235;
     }
-    body.light .toast { background: #ffffff; }
+    body.light .toast { background: #ffffff; color: #1e2235; }
     body.light .cal-day:hover:not(.cal-empty):not(.cal-other) {
       background: rgba(0,0,0,0.06);
     }
@@ -66,18 +66,193 @@
       background: rgba(0,0,0,0.06); color: #1e2235;
     }
     body.light .btn-ghost:hover { background: rgba(0,0,0,0.1); }
+    body.light .rep-table th { background: rgba(0,0,0,0.04); color: #475569; }
+    body.light .rep-table td { border-bottom-color: rgba(0,0,0,0.06); }
+    body.light .rep-table tr:hover { background: rgba(0,0,0,0.03); }
+    body.light .rep-summary-card { background: rgba(0,0,0,0.03); }
+    body.light .adj-section-box { background: rgba(245,158,11,0.06); }
 
-    /* Smooth theme transition */
+    /* Transitions */
     *, *::before, *::after {
       transition: background-color 0.25s ease, border-color 0.2s ease, color 0.2s ease;
     }
-    /* Don't animate transforms (breaks animations) */
     .action-btn, .card, .btn, .cal-day, .tx-item {
       transition: background-color 0.25s ease, border-color 0.2s ease,
                   color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    /* Theme toggle button */
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* BACKGROUND ORBS */
+    .orbs {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.18; }
+    .orb-1 { width: 500px; height: 500px; background: #7c5cfc; top: -150px; left: -100px; }
+    .orb-2 { width: 400px; height: 400px; background: #22c55e; bottom: -100px; right: -80px; }
+    .orb-3 { width: 300px; height: 300px; background: #f59e0b; top: 40%; left: 50%; transform: translateX(-50%); }
+
+    /* SCREENS */
+    .screen { display: none; position: relative; z-index: 1; }
+    .screen.active { display: flex; }
+
+    /* LOGIN SCREEN */
+    #login-screen {
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow);
+      animation: slideUp 0.5s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .login-logo { text-align: center; margin-bottom: 32px; }
+    .login-logo .logo-icon {
+      width: 120px; height: 120px;
+      background: #fff;
+      border-radius: 28px;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-bottom: 20px; overflow: hidden;
+      box-shadow: 0 0 0 4px rgba(124,92,252,0.25), 0 16px 40px rgba(124,92,252,0.4);
+      animation: logoFloat 3.5s ease-in-out infinite;
+    }
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-6px); }
+    }
+    .login-logo .logo-icon img { width: 100%; height: 100%; object-fit: contain; }
+    .login-logo h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+    .login-logo p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
+
+    .user-select {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;
+    }
+    .user-btn {
+      background: rgba(255,255,255,0.04);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 8px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 0.82rem; font-weight: 600;
+      transition: all 0.2s ease;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .user-btn:hover { border-color: var(--primary2); transform: translateY(-2px); }
+    .user-btn.selected {
+      border-color: var(--primary);
+      background: rgba(124,92,252,0.18);
+      box-shadow: 0 0 16px rgba(124,92,252,0.3);
+    }
+    .user-btn .avatar {
+      width: 48px; height: 48px; border-radius: 50%; overflow: hidden;
+      background: #333; display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+    }
+    .user-btn .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block; font-size: 0.78rem; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 12px 16px; border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 0.92rem; outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124,92,252,0.2);
+    }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+    .error-msg {
+      color: var(--red); font-size: 0.8rem; margin-top: 6px; display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 20px; border-radius: 12px; font-size: 0.9rem; font-weight: 700;
+      border: none; cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all 0.2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: #fff; box-shadow: 0 4px 16px rgba(124,92,252,0.4);
+    }
+    .btn-green {
+      background: linear-gradient(135deg, var(--green), var(--green2));
+      color: #fff; box-shadow: 0 4px 16px rgba(34,197,94,0.35);
+    }
+    .btn-red {
+      background: linear-gradient(135deg, var(--red), var(--red2));
+      color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,0.35);
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, var(--yellow), var(--yellow2));
+      color: #fff; box-shadow: 0 4px 16px rgba(245,158,11,0.35);
+    }
+    .btn-ghost {
+      background: var(--glass); color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+    .btn-sm { padding: 7px 14px; font-size: 0.8rem; border-radius: 9px; }
+
+    /* HEADER */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(13,15,24,0.85);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-title { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.3px; }
+    .header-subtitle { font-size: 0.76rem; color: var(--text-muted); text-transform: capitalize; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    .user-badge {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px 6px 8px; border-radius: 50px;
+      background: var(--glass); border: 1px solid var(--border);
+      font-size: 0.84rem; font-weight: 700;
+    }
+    .user-badge .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green); box-shadow: 0 0 8px var(--green);
+    }
+
     .btn-theme {
       width: 36px; height: 36px; border-radius: 10px;
       border: 1.5px solid var(--border);
@@ -88,25 +263,10 @@
     }
     .btn-theme:hover { background: rgba(124,92,252,0.18); border-color: var(--primary); }
 
-    /* Fechar Caixa button */
-    .btn-close-cash {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 7px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 700;
-      border: 1.5px solid rgba(245,158,11,0.5);
-      background: rgba(245,158,11,0.12); color: #f59e0b;
-      cursor: pointer; font-family: 'Inter', sans-serif;
-      transition: all 0.2s ease; flex-shrink: 0; white-space: nowrap;
-    }
-    .btn-close-cash:hover {
-      background: rgba(245,158,11,0.25); border-color: var(--yellow);
-      box-shadow: 0 0 14px rgba(245,158,11,0.3);
-    }
-    @media (max-width: 640px) {
-      .btn-close-cash span.label { display: none; }
-      .btn-close-cash { padding: 7px 10px; }
-    }
+    /* MAIN CONTENT */
+    .main { padding: 24px 20px; max-width: 1140px; margin: 0 auto; width: 100%; }
 
-    /* Closed-day banner */
+    /* CLOSING BANNER */
     .closing-banner {
       background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.06));
       border: 1px solid rgba(245,158,11,0.3);
@@ -126,318 +286,87 @@
     }
     .closing-banner.hidden { display: none; }
 
-    /* Closed period tag on day summary */
-    .closed-period-tag {
-      display: inline-flex; align-items: center; gap: 5px;
-      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.3px;
-      background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);
-      color: #f59e0b; border-radius: 50px; padding: 2px 9px;
-      margin-bottom: 10px;
-    }
-
-    /* Close-cash modal specifics */
-    .close-cash-summary {
-      background: rgba(0,0,0,0.18);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 20px;
-      display: flex; flex-direction: column; gap: 10px;
-    }
-    .ccs-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border);
-    }
-    .ccs-row.entry-row { background: rgba(34,197,94,0.07); border-color: rgba(34,197,94,0.2); }
-    .ccs-row.exit-row  { background: rgba(239,68,68,0.07);  border-color: rgba(239,68,68,0.2); }
-    .ccs-row.bal-row   { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.25); }
-    .ccs-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
-    .ccs-val   { font-size: 1rem; font-weight: 800; }
-    .close-cash-warning {
-      font-size: 0.78rem; color: var(--text-muted);
-      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
-      border-radius: 8px; padding: 10px 12px; line-height: 1.6;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
     /* ===========================
-       BACKGROUND ORBS
+       BARRA DE CONTROLE DE PERÍODO
     =========================== */
-    .orbs {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      overflow: hidden;
-    }
-    .orb {
-      position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.18;
-    }
-    .orb-1 { width: 500px; height: 500px; background: #7c5cfc; top: -150px; left: -100px; }
-    .orb-2 { width: 400px; height: 400px; background: #22c55e; bottom: -100px; right: -80px; }
-    .orb-3 { width: 300px; height: 300px; background: #ec4899; top: 40%; left: 50%; transform: translateX(-50%); }
-
-    /* ===========================
-       SCREENS
-    =========================== */
-    .screen { display: none; position: relative; z-index: 1; }
-    .screen.active { display: flex; }
-
-    /* ===========================
-       LOGIN SCREEN
-    =========================== */
-    #login-screen {
-      min-height: 100vh;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .login-card {
+    .period-control-card {
       background: var(--glass);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(16px);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 48px 40px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: var(--shadow);
-      animation: slideUp 0.5s ease;
+      padding: 18px 22px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow-sm);
     }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .login-logo {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    .login-logo .logo-icon {
-      width: 120px; height: 120px;
-      background: #fff;
-      border-radius: 28px;
-      display: inline-flex; align-items: center; justify-content: center;
-      margin-bottom: 20px; overflow: hidden;
-      box-shadow:
-        0 0 0 4px rgba(124,92,252,0.25),
-        0 0 0 8px rgba(124,92,252,0.1),
-        0 16px 40px rgba(124,92,252,0.4),
-        0 4px 12px rgba(0,0,0,0.4);
-      animation: logoFloat 3.5s ease-in-out infinite;
-    }
-    @keyframes logoFloat {
-      0%, 100% { transform: translateY(0px); box-shadow: 0 0 0 4px rgba(124,92,252,0.25), 0 0 0 8px rgba(124,92,252,0.1), 0 16px 40px rgba(124,92,252,0.4), 0 4px 12px rgba(0,0,0,0.4); }
-      50%       { transform: translateY(-6px); box-shadow: 0 0 0 4px rgba(124,92,252,0.35), 0 0 0 10px rgba(124,92,252,0.12), 0 24px 50px rgba(124,92,252,0.5), 0 8px 20px rgba(0,0,0,0.35); }
-    }
-    .login-logo .logo-icon img {
-      width: 100%; height: 100%; object-fit: contain; display: block;
-    }
-    .login-logo h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
-    .login-logo p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
-
-    .form-group { margin-bottom: 18px; }
-    .form-group label {
-      display: block; font-size: 0.8rem; font-weight: 600;
-      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-
-    .user-select {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-    }
-    .user-btn {
-      background: var(--glass); border: 1.5px solid var(--border);
-      border-radius: var(--radius); padding: 14px 8px; cursor: pointer;
-      color: var(--text); font-family: 'Inter', sans-serif;
-      font-size: 0.82rem; font-weight: 600; text-align: center;
-      transition: all 0.2s ease;
-    }
-    .user-btn .avatar {
-      width: 54px; height: 54px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem; margin: 0 auto 8px;
-      background: linear-gradient(135deg, #7c5cfc44, #9d7cff44);
-      overflow: hidden; border: 2px solid rgba(124,92,252,0.3);
-    }
-    .user-btn .avatar img {
-      width: 100%; height: 100%; object-fit: cover; display: block;
-    }
-    .user-btn:hover .avatar, .user-btn.selected .avatar {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(124,92,252,0.3);
-    }
-
-    /* Header avatar photo */
-    .header-avatar-img {
-      width: 28px; height: 28px; border-radius: 50%;
-      object-fit: cover; display: block;
-      border: 2px solid rgba(124,92,252,0.5);
-    }
-
-    /* User chip photo */
-    .chip-photo {
-      width: 16px; height: 16px; border-radius: 50%;
-      object-fit: cover; display: block;
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-    .user-btn:hover, .user-btn.selected {
-      border-color: var(--primary); background: rgba(124,92,252,0.15);
-      transform: translateY(-2px);
-    }
-    .user-btn.selected { box-shadow: 0 0 0 2px var(--primary); }
-
-    input[type="password"], input[type="text"], input[type="number"],
-    select, textarea {
-      width: 100%; background: rgba(255,255,255,0.06);
-      border: 1.5px solid var(--border); border-radius: var(--radius);
-      color: var(--text); font-family: 'Inter', sans-serif;
-      font-size: 0.95rem; padding: 12px 16px;
-      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-      appearance: none;
-    }
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(124,92,252,0.2);
-    }
-    select option { background: #1e2235; color: var(--text); }
-
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 13px 24px; border-radius: var(--radius);
-      font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600;
-      cursor: pointer; border: none; transition: all 0.2s ease;
-      text-decoration: none;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      color: #fff; width: 100%;
-      box-shadow: 0 4px 16px rgba(124,92,252,0.4);
-    }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,92,252,0.5); }
-    .btn-primary:active { transform: translateY(0); }
-
-    .btn-green {
-      background: linear-gradient(135deg, var(--green), var(--green2));
-      color: #fff; box-shadow: 0 4px 16px rgba(34,197,94,0.35);
-    }
-    .btn-green:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(34,197,94,0.5); }
-
-    .btn-red {
-      background: linear-gradient(135deg, var(--red), var(--red2));
-      color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,0.35);
-    }
-    .btn-red:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(239,68,68,0.5); }
-
-    .btn-ghost {
-      background: var(--glass); border: 1.5px solid var(--border); color: var(--text);
-    }
-    .btn-ghost:hover { background: rgba(255,255,255,0.1); }
-
-    .btn-sm { padding: 7px 14px; font-size: 0.82rem; }
-    .btn-icon { padding: 8px; border-radius: 10px; }
-
-    .error-msg {
-      color: var(--red); font-size: 0.82rem; margin-top: 8px;
-      background: rgba(239,68,68,0.1); padding: 8px 12px; border-radius: 8px;
-      border: 1px solid rgba(239,68,68,0.2); display: none;
-    }
-    .error-msg.visible { display: block; animation: shake 0.3s ease; }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-6px); }
-      75% { transform: translateX(6px); }
-    }
-
-    /* ===========================
-       APP SCREEN
-    =========================== */
-    #app-screen {
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    /* HEADER */
-    .header {
-      background: rgba(13,15,24,0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: 64px;
+    .period-control-header {
       display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 100;
+      flex-wrap: wrap; gap: 14px; margin-bottom: 14px;
     }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .header-logo {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      border-radius: 10px; display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
+    .period-title-group { display: flex; align-items: center; gap: 10px; }
+    .period-icon { font-size: 1.5rem; }
+    .period-title { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.2px; }
+    .period-active-label {
+      font-size: 0.78rem; color: var(--primary2); font-weight: 600; margin-top: 2px;
     }
-    .header-title { font-size: 1rem; font-weight: 700; }
-    .header-subtitle { font-size: 0.75rem; color: var(--text-muted); }
-
-    .header-right { display: flex; align-items: center; gap: 10px; }
-    .user-badge {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--glass); border: 1px solid var(--border);
-      border-radius: 50px; padding: 6px 14px 6px 8px;
-      font-size: 0.82rem; font-weight: 600;
+    .period-quick-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-period {
+      padding: 6px 12px; border-radius: 50px; font-size: 0.76rem; font-weight: 600;
+      cursor: pointer; border: 1.5px solid var(--border);
+      background: var(--glass); color: var(--text-muted);
+      font-family: 'Inter', sans-serif; transition: all 0.2s ease;
     }
-    .user-badge .dot {
-      width: 8px; height: 8px; border-radius: 50%; background: var(--green);
-      box-shadow: 0 0 6px var(--green);
+    .btn-period:hover {
+      border-color: var(--primary2); color: var(--text); background: rgba(124,92,252,0.1);
     }
-    .user-avatar-sm {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 700;
+    .btn-period.active {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, rgba(124,92,252,0.25), rgba(157,124,255,0.2));
+      color: var(--text); box-shadow: 0 2px 8px rgba(124,92,252,0.25);
     }
-
-    /* MAIN CONTENT */
-    .main { padding: 28px 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+    .period-custom-row {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .period-inputs { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .period-input-group {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.8rem; color: var(--text-muted); font-weight: 600;
+    }
+    .period-input-group input[type="date"] {
+      padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: rgba(0,0,0,0.2); color: var(--text);
+      font-family: 'Inter', sans-serif; font-size: 0.8rem;
+    }
 
     /* CARDS GRID */
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 18px; margin-bottom: 28px;
+      gap: 18px; margin-bottom: 22px;
     }
-
     .card {
       background: var(--glass);
       backdrop-filter: blur(16px);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 24px;
+      padding: 22px;
       transition: transform 0.2s, box-shadow 0.2s;
       position: relative; overflow: hidden;
     }
-    .card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    }
+    .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
     .card.card-balance::before { background: linear-gradient(90deg, var(--primary), var(--primary2)); }
     .card.card-entry::before  { background: linear-gradient(90deg, var(--green), #4ade80); }
     .card.card-exit::before   { background: linear-gradient(90deg, var(--red), #f87171); }
-    .card.card-count::before  { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
+    .card.card-adj::before    { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
 
     .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
-
     .card-header-row {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      margin-bottom: 16px;
+      display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px;
     }
     .card-icon {
-      width: 44px; height: 44px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center; font-size: 20px;
+      width: 42px; height: 42px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 19px;
     }
     .card-icon.purple { background: rgba(124,92,252,0.2); }
     .card-icon.green  { background: rgba(34,197,94,0.2); }
@@ -445,52 +374,130 @@
     .card-icon.yellow { background: rgba(245,158,11,0.2); }
 
     .card-period { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; }
-    .card-label  { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; margin-bottom: 6px; }
-    .card-value  { font-size: 1.7rem; font-weight: 800; letter-spacing: -1px; }
+    .card-label  { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; margin-bottom: 4px; }
+    .card-value  { font-size: 1.65rem; font-weight: 800; letter-spacing: -0.5px; }
     .card-value.green { color: var(--green); }
     .card-value.red   { color: var(--red); }
     .card-value.purple { color: var(--primary2); }
-    .card-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+    .card-value.yellow { color: var(--yellow); }
+    .card-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
 
     /* ACTION BUTTONS */
-    .action-section {
-      display: flex; gap: 14px; margin-bottom: 28px; flex-wrap: wrap;
-    }
     .action-btn {
-      flex: 1; min-width: 160px;
-      padding: 18px 28px; border-radius: var(--radius-lg);
-      font-size: 1rem; font-weight: 700;
+      padding: 16px 24px; border-radius: var(--radius-lg);
+      font-size: 0.95rem; font-weight: 700;
       display: flex; align-items: center; justify-content: center; gap: 10px;
       cursor: pointer; border: none; font-family: 'Inter', sans-serif;
       transition: all 0.2s ease; letter-spacing: 0.2px;
     }
-    .action-btn .icon { font-size: 1.4rem; }
+    .action-btn .icon { font-size: 1.3rem; }
     .action-btn-entry {
       background: linear-gradient(135deg, var(--green), #16a34a);
-      color: #fff; box-shadow: 0 6px 24px rgba(34,197,94,0.4);
+      color: #fff; box-shadow: 0 6px 20px rgba(34,197,94,0.35);
     }
-    .action-btn-entry:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(34,197,94,0.55); }
+    .action-btn-entry:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(34,197,94,0.5); }
     .action-btn-exit {
       background: linear-gradient(135deg, var(--red), #dc2626);
-      color: #fff; box-shadow: 0 6px 24px rgba(239,68,68,0.4);
+      color: #fff; box-shadow: 0 6px 20px rgba(239,68,68,0.35);
     }
-    .action-btn-exit:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(239,68,68,0.55); }
+    .action-btn-exit:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(239,68,68,0.5); }
     .action-btn-close {
       background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: #fff; box-shadow: 0 6px 24px rgba(245,158,11,0.4);
+      color: #fff; box-shadow: 0 6px 20px rgba(245,158,11,0.35);
     }
-    .action-btn-close:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(245,158,11,0.55); }
-    .action-btn:active { transform: translateY(0) scale(0.98); }
+    .action-btn-close:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(245,158,11,0.5); }
+
+    /* CALENDAR */
+    .calendar-section { margin-bottom: 26px; }
+    .calendar-wrapper {
+      display: grid; grid-template-columns: 1fr 310px; gap: 18px; align-items: start;
+    }
+    @media (max-width: 860px) {
+      .calendar-wrapper { grid-template-columns: 1fr; }
+    }
+    .calendar-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px; position: relative; overflow: hidden;
+    }
+    .calendar-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--primary2));
+    }
+    .cal-nav {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+    }
+    .cal-nav-title { font-size: 1rem; font-weight: 700; text-transform: capitalize; }
+    .cal-arrow {
+      width: 32px; height: 32px; border-radius: 9px; border: 1.5px solid var(--border);
+      background: var(--glass); color: var(--text); cursor: pointer;
+      font-size: 1rem; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .cal-arrow:hover { border-color: var(--primary); background: rgba(124,92,252,0.18); }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-weekday {
+      text-align: center; font-size: 0.68rem; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.4px; padding: 4px 0;
+    }
+    .cal-day {
+      aspect-ratio: 1; border-radius: 9px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 0.82rem; font-weight: 500; cursor: pointer;
+      position: relative; transition: all 0.15s; border: 1.5px solid transparent;
+    }
+    .cal-day:hover:not(.cal-empty):not(.cal-other) {
+      background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12);
+    }
+    .cal-day.cal-empty, .cal-day.cal-other { cursor: default; opacity: 0.18; }
+    .cal-day.cal-today {
+      border-color: var(--primary); background: rgba(124,92,252,0.15);
+      color: var(--primary2); font-weight: 700;
+    }
+    .cal-day.cal-selected {
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      border-color: var(--primary2); color: #fff; font-weight: 700;
+      box-shadow: 0 4px 14px rgba(124,92,252,0.45);
+    }
+    .cal-day.cal-selected .cal-dots { display: none; }
+    .cal-dots { display: flex; gap: 2px; margin-top: 2px; }
+    .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .cal-dot.entry { background: var(--green); }
+    .cal-dot.exit  { background: var(--red); }
+
+    .day-summary-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+    .day-summary-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; }
+    .day-no-select { text-align: center; padding: 30px 10px; color: var(--text-muted); }
+    .day-no-select .nsi { font-size: 2.2rem; margin-bottom: 8px; opacity: 0.5; }
+    .day-summary-date { font-size: 1.05rem; font-weight: 800; margin-bottom: 12px; }
+    .day-summary-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .day-summary-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+    .day-summary-row.entry-row { background: rgba(34,197,94,0.06); border-color: rgba(34,197,94,0.2); }
+    .day-summary-row.exit-row  { background: rgba(239,68,68,0.06);  border-color: rgba(239,68,68,0.2); }
+    .day-summary-row.bal-row   { background: rgba(124,92,252,0.06); border-color: rgba(124,92,252,0.2); font-weight: 700; }
 
     /* HISTORY SECTION */
     .section-header {
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
     }
-    .section-title { font-size: 1.1rem; font-weight: 700; }
-    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .section-title { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
     .filter-btn {
-      padding: 6px 14px; border-radius: 50px; font-size: 0.78rem; font-weight: 600;
+      padding: 6px 13px; border-radius: 50px; font-size: 0.76rem; font-weight: 600;
       cursor: pointer; border: 1.5px solid var(--border);
       background: var(--glass); color: var(--text-muted);
       font-family: 'Inter', sans-serif; transition: all 0.2s;
@@ -500,71 +507,86 @@
 
     .history-list { display: flex; flex-direction: column; gap: 10px; }
 
+    /* TRANSACTION ITEMS & MILESTONES */
     .tx-item {
       background: var(--glass);
       backdrop-filter: blur(12px);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px 18px;
+      padding: 15px 18px;
       display: flex; align-items: center; gap: 14px;
       transition: all 0.2s; animation: fadeIn 0.3s ease;
     }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .tx-item:hover { border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.07); }
 
     .tx-dot {
       width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center; font-size: 1.15rem;
     }
-    .tx-dot.entry { background: rgba(34,197,94,0.18); }
-    .tx-dot.exit  { background: rgba(239,68,68,0.18); }
+    .tx-dot.entry      { background: rgba(34,197,94,0.18); }
+    .tx-dot.exit       { background: rgba(239,68,68,0.18); }
+    .tx-dot.adjustment { background: rgba(245,158,11,0.22); }
+    .tx-dot.closing    { background: rgba(245,158,11,0.2); }
+    .tx-dot.opening    { background: rgba(56,189,248,0.2); }
+
+    .tx-item.adjustment {
+      border-color: rgba(245,158,11,0.4);
+      background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(239,68,68,0.05));
+    }
+    .tx-item.closing {
+      border-color: rgba(245,158,11,0.4);
+      background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04));
+    }
+    .tx-item.opening {
+      border-color: rgba(56,189,248,0.35);
+      background: linear-gradient(135deg, rgba(56,189,248,0.1), rgba(56,189,248,0.03));
+    }
 
     .tx-info { flex: 1; min-width: 0; }
-    .tx-desc { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tx-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    .tx-client-highlight {
+      font-size: 0.95rem; font-weight: 700; color: var(--text);
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .tx-desc { font-size: 0.82rem; color: var(--text); margin-top: 3px; font-weight: 500; }
+    .tx-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
 
-    .tx-amount { font-size: 1.05rem; font-weight: 700; white-space: nowrap; }
-    .tx-amount.entry { color: var(--green); }
-    .tx-amount.exit  { color: var(--red); }
+    .tx-amount { font-size: 1.05rem; font-weight: 800; white-space: nowrap; }
+    .tx-amount.entry      { color: var(--green); }
+    .tx-amount.exit       { color: var(--red); }
+    .tx-amount.adjustment { color: var(--yellow); }
+    .tx-amount.closing    { color: #f59e0b; }
+    .tx-amount.opening    { color: #38bdf8; }
 
     .tx-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s; }
     .tx-item:hover .tx-actions { opacity: 1; }
 
-    .btn-del {
+    .btn-del, .btn-edit {
       width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer;
-      background: rgba(239,68,68,0.15); color: var(--red);
       display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
       transition: all 0.2s;
     }
+    .btn-del { background: rgba(239,68,68,0.15); color: var(--red); }
     .btn-del:hover { background: rgba(239,68,68,0.3); }
-
-    .btn-edit {
-      width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer;
-      background: rgba(124,92,252,0.15); color: var(--primary2);
-      display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
-      transition: all 0.2s;
-    }
+    .btn-edit { background: rgba(124,92,252,0.15); color: var(--primary2); }
     .btn-edit:hover { background: rgba(124,92,252,0.3); }
-    .modal-badge.edit { background: rgba(124,92,252,0.2); color: var(--primary2); }
 
-    .empty-state {
-      text-align: center; padding: 60px 20px;
-      color: var(--text-muted);
-    }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
     .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
     .empty-state p { font-size: 0.9rem; }
 
-    /* User badges per person */
+    /* USER CHIPS */
     .user-chip {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 2px 9px 2px 5px; border-radius: 50px;
-      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.2px;
-      flex-shrink: 0;
+      padding: 3px 9px 3px 5px; border-radius: 50px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.2px; flex-shrink: 0;
     }
     .user-chip .chip-dot {
-      width: 14px; height: 14px; border-radius: 50%;
+      width: 16px; height: 16px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.6rem; font-weight: 800; color: #fff;
+      font-size: 0.62rem; font-weight: 800; color: #fff;
+    }
+    .user-chip .chip-photo {
+      width: 18px; height: 18px; border-radius: 50%; object-fit: cover; display: block;
     }
     .user-chip.carol  { background: rgba(124,92,252,0.18); color: #a78bfa; border: 1px solid rgba(124,92,252,0.3); }
     .user-chip.carol  .chip-dot { background: #7c5cfc; }
@@ -578,7 +600,7 @@
     =========================== */
     .modal-overlay {
       display: none; position: fixed; inset: 0; z-index: 200;
-      background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+      background: rgba(0,0,0,0.72); backdrop-filter: blur(6px);
       align-items: center; justify-content: center; padding: 20px;
     }
     .modal-overlay.open { display: flex; animation: fadeInBg 0.2s ease; }
@@ -586,31 +608,29 @@
 
     .modal {
       background: #161929; border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 32px;
-      width: 100%; max-width: 460px;
+      border-radius: var(--radius-lg); padding: 30px;
+      width: 100%; max-width: 520px;
       box-shadow: 0 24px 64px rgba(0,0,0,0.6);
-      animation: modalIn 0.25s ease;
-      position: relative;
+      animation: modalIn 0.25s ease; position: relative;
     }
     @keyframes modalIn {
       from { opacity: 0; transform: scale(0.93) translateY(10px); }
-      to   { opacity: 1; transform: scale(1)   translateY(0); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
     }
-
     .modal-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 24px;
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
     }
     .modal-title {
-      font-size: 1.15rem; font-weight: 700;
-      display: flex; align-items: center; gap: 10px;
+      font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 10px;
     }
     .modal-badge {
       padding: 3px 10px; border-radius: 50px; font-size: 0.72rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.5px;
     }
-    .modal-badge.entry { background: rgba(34,197,94,0.2); color: var(--green); }
-    .modal-badge.exit  { background: rgba(239,68,68,0.2); color: var(--red); }
+    .modal-badge.entry      { background: rgba(34,197,94,0.2); color: var(--green); }
+    .modal-badge.exit       { background: rgba(239,68,68,0.2); color: var(--red); }
+    .modal-badge.warning    { background: rgba(245,158,11,0.2); color: var(--yellow); }
+    .modal-badge.adjustment { background: rgba(245,158,11,0.2); color: var(--yellow); }
 
     .btn-close {
       width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border);
@@ -620,23 +640,118 @@
     }
     .btn-close:hover { background: rgba(239,68,68,0.15); color: var(--red); border-color: var(--red); }
 
-    .modal-footer {
-      display: flex; gap: 10px; margin-top: 24px;
-    }
+    .modal-footer { display: flex; gap: 10px; margin-top: 22px; }
     .modal-footer .btn { flex: 1; }
 
-    /* Value display in modal */
     .value-preview {
-      text-align: center; padding: 18px; border-radius: var(--radius);
-      margin-bottom: 20px; border: 1.5px dashed var(--border);
-      font-size: 2rem; font-weight: 800; letter-spacing: -1px;
+      text-align: center; padding: 14px; border-radius: var(--radius);
+      margin-bottom: 18px; border: 1.5px dashed var(--border);
+      font-size: 1.9rem; font-weight: 800; letter-spacing: -1px;
     }
     .value-preview.entry { color: var(--green); border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.06); }
     .value-preview.exit  { color: var(--red);   border-color: rgba(239,68,68,0.3);  background: rgba(239,68,68,0.06); }
 
+    /* CLOSE CASH SPECIFICS */
+    .close-cash-summary {
+      background: rgba(0,0,0,0.2); border-radius: var(--radius);
+      padding: 14px; margin-bottom: 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .ccs-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+    }
+    .ccs-row.entry-row { background: rgba(34,197,94,0.07); border-color: rgba(34,197,94,0.2); }
+    .ccs-row.exit-row  { background: rgba(239,68,68,0.07);  border-color: rgba(239,68,68,0.2); }
+    .ccs-row.bal-row   { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.3); }
+    .ccs-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+    .ccs-val   { font-size: 0.95rem; font-weight: 800; }
+
+    .close-diff-card {
+      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px;
+      border: 1.5px solid var(--border); animation: fadeIn 0.3s ease;
+    }
+    .close-diff-card.exact {
+      background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.3);
+    }
+    .close-diff-card.diff-alert {
+      background: rgba(245,158,11,0.09); border-color: rgba(245,158,11,0.4);
+    }
+    .close-diff-title {
+      font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+    }
+    .close-diff-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+
+    .adj-section-box {
+      background: rgba(0,0,0,0.2); border: 1px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px;
+    }
+    .adj-badge-header {
+      font-size: 0.76rem; font-weight: 700; color: #f59e0b;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      display: flex; align-items: center; gap: 6px; margin-bottom: 12px;
+    }
+
     /* ===========================
-       TOAST
+       REPORT MODAL (AMPLIADO)
     =========================== */
+    .modal-report-dialog {
+      max-width: 960px !important;
+      max-height: 90vh;
+      display: flex; flex-direction: column;
+    }
+    .modal-report-body {
+      overflow-y: auto; padding-right: 6px; flex: 1; margin-top: 10px;
+    }
+    .rep-header-box {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 16px;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .rep-summary-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px; margin-bottom: 18px;
+    }
+    .rep-summary-card {
+      background: rgba(0,0,0,0.22); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px; text-align: center;
+    }
+    .rep-summary-label {
+      font-size: 0.7rem; color: var(--text-muted); font-weight: 700;
+      text-transform: uppercase; margin-bottom: 4px;
+    }
+    .rep-summary-val { font-size: 1.15rem; font-weight: 800; }
+
+    .rep-audit-box {
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px;
+    }
+    .rep-audit-title {
+      font-size: 0.88rem; font-weight: 700; color: var(--yellow);
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    }
+    .rep-audit-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+
+    .rep-table-wrapper {
+      overflow-x: auto; margin-top: 12px; border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 18px;
+    }
+    .rep-table {
+      width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;
+    }
+    .rep-table th {
+      background: rgba(255,255,255,0.05); padding: 10px 12px;
+      font-size: 0.72rem; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .rep-table td {
+      padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      vertical-align: middle;
+    }
+    .rep-table tr:hover { background: rgba(255,255,255,0.03); }
+
+    /* TOAST */
     .toast-container {
       position: fixed; bottom: 24px; right: 24px; z-index: 999;
       display: flex; flex-direction: column; gap: 10px;
@@ -645,9 +760,8 @@
       background: #1e2435; border: 1px solid var(--border);
       border-radius: var(--radius); padding: 14px 18px;
       display: flex; align-items: center; gap: 10px;
-      box-shadow: var(--shadow); min-width: 250px; max-width: 340px;
-      animation: slideInRight 0.3s ease;
-      font-size: 0.88rem; font-weight: 500;
+      box-shadow: var(--shadow); min-width: 250px; max-width: 360px;
+      animation: slideInRight 0.3s ease; font-size: 0.88rem; font-weight: 500;
     }
     @keyframes slideInRight {
       from { opacity: 0; transform: translateX(40px); }
@@ -657,19 +771,7 @@
     .toast.error   .toast-icon { color: var(--red); }
     .toast-icon { font-size: 1.2rem; flex-shrink: 0; }
 
-    /* ===========================
-       REPORT MODAL
-    =========================== */
-    .report-content {
-      background: rgba(0,0,0,0.2); border-radius: var(--radius);
-      padding: 16px; font-size: 0.82rem; color: var(--text-muted);
-      white-space: pre-wrap; font-family: 'Courier New', monospace;
-      max-height: 360px; overflow-y: auto; line-height: 1.8;
-    }
-
-    /* ===========================
-       CONFIRM DIALOG
-    =========================== */
+    /* CONFIRM DIALOG */
     .confirm-overlay {
       display: none; position: fixed; inset: 0; z-index: 300;
       background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
@@ -689,240 +791,17 @@
     .confirm-btns { display: flex; gap: 10px; }
     .confirm-btns .btn { flex: 1; }
 
-    /* ===========================
-       SCROLLBAR
-    =========================== */
-    ::-webkit-scrollbar { width: 6px; }
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-    /* ===========================
-       CALENDAR
-    =========================== */
-    .calendar-section {
-      margin-bottom: 28px;
-    }
-    .calendar-wrapper {
-      display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 18px;
-      align-items: start;
-    }
-    @media (max-width: 860px) {
-      .calendar-wrapper { grid-template-columns: 1fr; }
-    }
-
-    .calendar-card {
-      background: var(--glass);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      position: relative; overflow: hidden;
-    }
-    .calendar-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--primary), var(--primary2));
-    }
-
-    .cal-nav {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 18px;
-    }
-    .cal-nav-title {
-      font-size: 1rem; font-weight: 700; text-transform: capitalize;
-    }
-    .cal-arrow {
-      width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid var(--border);
-      background: var(--glass); color: var(--text); cursor: pointer;
-      font-size: 1rem; display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s; font-family: 'Inter', sans-serif;
-    }
-    .cal-arrow:hover { border-color: var(--primary); background: rgba(124,92,252,0.18); }
-
-    .cal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-    }
-    .cal-weekday {
-      text-align: center; font-size: 0.68rem; font-weight: 700;
-      color: var(--text-muted); text-transform: uppercase;
-      letter-spacing: 0.4px; padding: 4px 0;
-    }
-    .cal-day {
-      aspect-ratio: 1;
-      border-radius: 9px;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      font-size: 0.82rem; font-weight: 500; cursor: pointer;
-      position: relative; transition: all 0.15s;
-      border: 1.5px solid transparent;
-    }
-    .cal-day:hover:not(.cal-empty):not(.cal-other) {
-      background: rgba(255,255,255,0.08);
-      border-color: rgba(255,255,255,0.12);
-    }
-    .cal-day.cal-empty, .cal-day.cal-other {
-      cursor: default; opacity: 0.18;
-    }
-    .cal-day.cal-today {
-      border-color: var(--primary);
-      background: rgba(124,92,252,0.15);
-      color: var(--primary2); font-weight: 700;
-    }
-    .cal-day.cal-selected {
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      border-color: var(--primary2);
-      color: #fff; font-weight: 700;
-      box-shadow: 0 4px 14px rgba(124,92,252,0.45);
-    }
-    .cal-day.cal-selected .cal-dots { display: none; }
-
-    .cal-dots {
-      display: flex; gap: 2px; margin-top: 2px;
-    }
-    .cal-dot {
-      width: 5px; height: 5px; border-radius: 50%;
-    }
-    .cal-dot.entry { background: var(--green); }
-    .cal-dot.exit  { background: var(--red); }
-
-    /* Day Summary Panel */
-    .day-summary-card {
-      background: var(--glass);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      position: relative; overflow: hidden;
-    }
-    .day-summary-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--yellow), #fbbf24);
-    }
-    .day-summary-title {
-      font-size: 0.78rem; font-weight: 700; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;
-    }
-    .day-summary-date {
-      font-size: 1.1rem; font-weight: 800; margin-bottom: 16px;
-      letter-spacing: -0.3px;
-    }
-    .day-summary-rows { display: flex; flex-direction: column; gap: 10px; }
-    .day-summary-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 12px; border-radius: 10px;
-      border: 1px solid var(--border);
-    }
-    .day-summary-row .dsr-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
-    .day-summary-row .dsr-val   { font-size: 0.95rem; font-weight: 700; }
-    .day-summary-row.entry-row { background: rgba(34,197,94,0.07); border-color: rgba(34,197,94,0.2); }
-    .day-summary-row.exit-row  { background: rgba(239,68,68,0.07); border-color: rgba(239,68,68,0.2); }
-    .day-summary-row.bal-row   { background: rgba(124,92,252,0.07); border-color: rgba(124,92,252,0.2); }
-    .day-no-select {
-      text-align: center; padding: 30px 10px;
-      color: var(--text-muted); font-size: 0.85rem;
-    }
-    .day-no-select .nsi { font-size: 2.2rem; margin-bottom: 10px; opacity: 0.4; }
-    .btn-view-day {
-      width: 100%; margin-top: 14px;
-      padding: 10px; border-radius: var(--radius);
-      font-size: 0.85rem; font-weight: 600;
-      background: rgba(124,92,252,0.18); border: 1.5px solid rgba(124,92,252,0.35);
-      color: var(--primary2); cursor: pointer; font-family: 'Inter', sans-serif;
-      transition: all 0.2s;
-    }
-    .btn-view-day:hover { background: rgba(124,92,252,0.3); }
-    .btn-clear-day {
-      width: 100%; margin-top: 8px;
-      padding: 8px; border-radius: var(--radius);
-      font-size: 0.78rem; font-weight: 500;
-      background: transparent; border: 1px solid var(--border);
-      color: var(--text-muted); cursor: pointer; font-family: 'Inter', sans-serif;
-      transition: all 0.2s;
-    }
-    .btn-clear-day:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
-
-    /* ===========================
-       RESPONSIVE — MOBILE FIRST
-    =========================== */
-
-    /* Header: hide subtitle on small, shrink header-right */
     @media (max-width: 640px) {
-      .header { padding: 0 14px; height: 58px; }
-      .header-title { font-size: 0.9rem; }
-      .header-subtitle { display: none; }
-      .header-logo { width: 32px; height: 32px; border-radius: 8px; }
-      .header-logo img { width: 32px; height: 32px; border-radius: 8px; }
-      .user-badge { padding: 4px 10px 4px 6px; font-size: 0.75rem; }
-      .btn.btn-ghost.btn-sm { padding: 6px 8px; font-size: 0.8rem; }
-    }
-
-    /* Main padding */
-    @media (max-width: 640px) {
-      .main { padding: 16px 14px; }
-    }
-
-    /* Login card */
-    @media (max-width: 480px) {
-      .login-card { padding: 28px 18px; }
-      .login-logo h1 { font-size: 1.3rem; }
-    }
-
-    /* Cards grid: 2 cols on tablet, 1 col on mobile */
-    @media (max-width: 640px) {
-      .cards-grid { grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
-      .card { padding: 16px; }
-      .card-value { font-size: 1.2rem; }
-      .card-icon { width: 36px; height: 36px; font-size: 16px; }
-    }
-    @media (max-width: 360px) {
       .cards-grid { grid-template-columns: 1fr; }
-    }
-
-    /* Action buttons: stack on very small */
-    @media (max-width: 640px) {
-      .action-section { gap: 10px; margin-bottom: 20px; }
-      .action-btn { flex: 1; min-width: 0; padding: 14px 12px; font-size: 0.88rem; }
-      .action-btn .icon { font-size: 1.1rem; }
-    }
-
-    /* Calendar: force single column on mobile */
-    @media (max-width: 640px) {
-      .calendar-wrapper { grid-template-columns: 1fr !important; }
-      .calendar-card { padding: 16px; }
-      .cal-day { font-size: 0.75rem; border-radius: 7px; }
-      .cal-weekday { font-size: 0.6rem; }
-      .cal-dot { width: 4px; height: 4px; }
-      .day-summary-card { padding: 16px; }
-    }
-
-    /* History items: wrap on mobile */
-    @media (max-width: 540px) {
-      .tx-item { flex-wrap: wrap; gap: 8px; padding: 12px 14px; }
-      .tx-info { min-width: 0; flex: 1 1 60%; }
-      .tx-amount { flex: 0 0 auto; }
-      .user-chip { order: 3; }
-      .tx-actions { order: 4; opacity: 1; }
-    }
-
-    /* Filter buttons: scroll horizontally */
-    @media (max-width: 540px) {
-      .filter-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
-      .filter-btn { flex-shrink: 0; }
-      .section-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-    }
-
-    /* Modals: full-width on mobile */
-    @media (max-width: 480px) {
-      .modal { padding: 22px 18px; border-radius: 18px 18px 0 0; }
-      .modal-overlay { align-items: flex-end; padding: 0; }
-      .modal-overlay .modal { max-width: 100%; border-radius: 22px 22px 0 0; }
-      .value-preview { font-size: 1.5rem; padding: 14px; }
-      .confirm-box { border-radius: 22px 22px 0 0; }
-      .confirm-overlay { align-items: flex-end; padding: 0; }
+      .header { padding: 12px 16px; }
+      .main { padding: 16px 12px; }
+      .login-card { padding: 32px 20px; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -946,7 +825,7 @@
         <img src="vigi.png" alt="VIGI" />
       </div>
       <h1>Caixa VIGI</h1>
-      <p>Sistema de Controle Financeiro</p>
+      <p>Sistema de Controle Financeiro & Conferência</p>
     </div>
 
     <div class="form-group">
@@ -974,8 +853,8 @@
       <div class="error-msg" id="login-error">Usuária ou senha incorretos.</div>
     </div>
 
-    <button class="btn btn-primary" onclick="doLogin()" id="login-btn">
-      <span>Entrar</span>
+    <button class="btn btn-primary" onclick="doLogin()" id="login-btn" style="width: 100%;">
+      <span>Entrar no Caixa</span>
       <span>→</span>
     </button>
   </div>
@@ -989,7 +868,7 @@
   <!-- HEADER -->
   <header class="header">
     <div class="header-left">
-      <img src="vigi.png" alt="VIGI" style="height:44px;width:auto;display:block;flex-shrink:0;" />
+      <img src="vigi.png" alt="VIGI" style="height:42px;width:auto;display:block;flex-shrink:0;" />
       <div>
         <div class="header-title">Caixa VIGI</div>
         <div class="header-subtitle" id="header-date"></div>
@@ -998,10 +877,10 @@
     <div class="header-right">
       <div class="user-badge">
         <div class="dot"></div>
-        <div class="user-avatar-sm" id="header-avatar" style="width:28px;height:28px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--primary),var(--primary2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;"></div>
+        <div class="user-avatar-sm" id="header-avatar" style="width:26px;height:26px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--primary),var(--primary2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;"></div>
         <span id="header-username"></span>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="openReport()" title="Relatório">📊</button>
+      <button class="btn btn-ghost btn-sm" onclick="openReport()" title="Relatório de Conferência (Fly)">📊 Relatório</button>
       <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Alternar tema">🌙</button>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()" title="Sair">🚪</button>
     </div>
@@ -1010,57 +889,101 @@
   <!-- MAIN -->
   <main class="main">
 
-    <!-- CLOSING BANNER (shown after a cash closing) -->
+    <!-- CLOSING BANNER -->
     <div class="closing-banner hidden" id="closing-banner">
       <div class="cb-icon">🔒</div>
       <div class="cb-text" id="closing-banner-text">Caixa fechado.</div>
     </div>
 
-    <!-- CARDS -->
+    <!-- 1. SELETOR / FILTRO DE PERÍODO -->
+    <div class="period-control-card">
+      <div class="period-control-header">
+        <div class="period-title-group">
+          <span class="period-icon">📅</span>
+          <div>
+            <div class="period-title">Período de Consulta</div>
+            <div class="period-active-label" id="period-active-label">Hoje</div>
+          </div>
+        </div>
+        <div class="period-quick-btns">
+          <button class="btn-period active" id="btn-period-today" onclick="setPeriodPreset('today')">Hoje</button>
+          <button class="btn-period" id="btn-period-yesterday" onclick="setPeriodPreset('yesterday')">Ontem</button>
+          <button class="btn-period" id="btn-period-7days" onclick="setPeriodPreset('7days')">7 Dias</button>
+          <button class="btn-period" id="btn-period-15days" onclick="setPeriodPreset('15days')">15 Dias</button>
+          <button class="btn-period" id="btn-period-thisMonth" onclick="setPeriodPreset('thisMonth')">Este Mês</button>
+          <button class="btn-period" id="btn-period-lastMonth" onclick="setPeriodPreset('lastMonth')">Mês Anterior</button>
+          <button class="btn-period" id="btn-period-all" onclick="setPeriodPreset('all')">Todo o Histórico</button>
+        </div>
+      </div>
+      <div class="period-custom-row">
+        <div class="period-inputs">
+          <div class="period-input-group">
+            <label>De:</label>
+            <input type="date" id="period-start-input" />
+          </div>
+          <div class="period-input-group">
+            <label>Até:</label>
+            <input type="date" id="period-end-input" />
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="applyCustomDateFilter()">
+            🔍 Filtrar Período
+          </button>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="openReport()">
+          📊 Conferência com o Fly
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. CARDS DO PERÍODO -->
     <div class="cards-grid">
+      <!-- Card 1: Saldo do Período -->
       <div class="card card-balance">
         <div class="card-header-row">
           <div class="card-icon purple">💰</div>
-          <span class="card-period">Saldo Atual</span>
+          <span class="card-period" id="card-balance-period">Saldo do Período</span>
         </div>
-        <div class="card-label">Balanço Geral</div>
+        <div class="card-label">Saldo Final do Período</div>
         <div class="card-value purple" id="card-balance">R$ 0,00</div>
-        <div class="card-sub" id="card-balance-sub">Todas as transações</div>
+        <div class="card-sub" id="card-balance-sub">Carregando saldo...</div>
       </div>
 
+      <!-- Card 2: Entradas no Período -->
       <div class="card card-entry">
         <div class="card-header-row">
           <div class="card-icon green">📈</div>
-          <span class="card-period">Hoje</span>
+          <span class="card-period">Receitas</span>
         </div>
         <div class="card-label">Total de Entradas</div>
         <div class="card-value green" id="card-entries">R$ 0,00</div>
         <div class="card-sub" id="card-entries-sub">0 lançamentos</div>
       </div>
 
+      <!-- Card 3: Saídas no Período -->
       <div class="card card-exit">
         <div class="card-header-row">
           <div class="card-icon red">📉</div>
-          <span class="card-period">Hoje</span>
+          <span class="card-period">Despesas</span>
         </div>
         <div class="card-label">Total de Saídas</div>
         <div class="card-value red" id="card-exits">R$ 0,00</div>
         <div class="card-sub" id="card-exits-sub">0 lançamentos</div>
       </div>
 
-      <div class="card card-count">
+      <!-- Card 4: Ajustes no Período -->
+      <div class="card card-adj">
         <div class="card-header-row">
-          <div class="card-icon yellow">📋</div>
-          <span class="card-period">Total</span>
+          <div class="card-icon yellow">⚖️</div>
+          <span class="card-period">Auditoria / Fly</span>
         </div>
-        <div class="card-label">Transações Registradas</div>
-        <div class="card-value" id="card-count" style="color: var(--yellow)">0</div>
-        <div class="card-sub" id="card-count-sub">No sistema</div>
+        <div class="card-label">Ajustes de Caixa</div>
+        <div class="card-value yellow" id="card-adjustments">0 ajustes</div>
+        <div class="card-sub" id="card-adjustments-sub">Sem ajustes registrados</div>
       </div>
     </div>
 
     <!-- ACTION BUTTONS -->
-    <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+    <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
       <button class="action-btn action-btn-entry" onclick="openModal('entry')" id="btn-entry" style="flex:1;min-width:160px;">
         <span class="icon">➕</span>
         Lançar Entrada
@@ -1070,26 +993,20 @@
         Lançar Saída
       </button>
     </div>
-    <div style="margin-bottom:28px;">
-      <button onclick="openCloseCashModal()" id="btn-close-cash-main"
-        style="width:100%;padding:16px 28px;border-radius:14px;font-size:1rem;font-weight:700;
-               display:flex;align-items:center;justify-content:center;gap:10px;
-               cursor:pointer;border:none;font-family:'Inter',sans-serif;letter-spacing:0.2px;
-               background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;
-               box-shadow:0 6px 24px rgba(245,158,11,0.4);transition:all 0.2s ease;">
-        <span style="font-size:1.3rem;">🔒</span>
-        Fechar Caixa do Dia
+    <div style="margin-bottom:24px;">
+      <button class="action-btn action-btn-close" onclick="openCloseCashModal()" id="btn-close-cash-main" style="width:100%;">
+        <span class="icon">🔒</span>
+        Conferir &amp; Fechar Caixa
       </button>
     </div>
 
     <!-- CALENDAR -->
     <div class="calendar-section">
-      <div class="section-header" style="margin-bottom: 14px;">
-        <div class="section-title">📅 Calendário</div>
-        <span style="font-size:0.78rem;color:var(--text-muted)">Clique em um dia para ver os lançamentos</span>
+      <div class="section-header" style="margin-bottom: 12px;">
+        <div class="section-title">📅 Calendário Mensal</div>
+        <span style="font-size:0.78rem;color:var(--text-muted)">Clique em qualquer dia para filtrar e ver os lançamentos</span>
       </div>
       <div class="calendar-wrapper">
-        <!-- Calendar Grid -->
         <div class="calendar-card">
           <div class="cal-nav">
             <button class="cal-arrow" onclick="calPrevMonth()">‹</button>
@@ -1098,27 +1015,29 @@
           </div>
           <div class="cal-grid" id="cal-grid"></div>
         </div>
-        <!-- Day Summary -->
         <div class="day-summary-card">
-          <div class="day-summary-title">📊 Resumo do Dia</div>
+          <div class="day-summary-title">📊 Resumo do Dia Selecionado</div>
           <div id="day-summary-content">
             <div class="day-no-select">
               <div class="nsi">📅</div>
-              <p>Selecione um dia no calendário para ver o resumo.</p>
+              <p>Selecione um dia no calendário para ver o detalhamento.</p>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- HISTORY -->
+    <!-- HISTORY / SEQUÊNCIA DO CAIXA -->
     <div class="section-header">
-      <div class="section-title" id="history-title">📋 Histórico de Lançamentos</div>
+      <div class="section-title" id="history-title">
+        <span>📋 Sequência &amp; Histórico do Caixa</span>
+      </div>
       <div class="filter-row">
-        <button class="filter-btn active" id="filter-all"   onclick="setFilter('all')">Todos</button>
-        <button class="filter-btn"        id="filter-entry" onclick="setFilter('entry')">Entradas</button>
-        <button class="filter-btn"        id="filter-exit"  onclick="setFilter('exit')">Saídas</button>
-        <button class="filter-btn"        id="filter-today" onclick="setFilter('today')">Hoje</button>
+        <button class="filter-btn active" id="filter-all" onclick="setHistoryFilter('all')">Todos</button>
+        <button class="filter-btn" id="filter-entry" onclick="setHistoryFilter('entry')">Entradas</button>
+        <button class="filter-btn" id="filter-exit" onclick="setHistoryFilter('exit')">Saídas</button>
+        <button class="filter-btn" id="filter-adjustment" onclick="setHistoryFilter('adjustment')">Ajustes ⚖️</button>
+        <button class="filter-btn" id="filter-closings" onclick="setHistoryFilter('closing')">Fechamentos 🔒</button>
       </div>
     </div>
     <div class="history-list" id="history-list"></div>
@@ -1146,24 +1065,45 @@
       <input type="number" id="entry-value" placeholder="0,00" min="0.01" step="0.01"
              oninput="updatePreview('entry')" onkeydown="if(event.key==='Enter') submitEntry()" />
     </div>
+
     <div class="form-group">
-      <label>Descrição</label>
-      <input type="text" id="entry-desc" placeholder="Ex: Instalação, Manutenção..." maxlength="80"
-             onkeydown="if(event.key==='Enter') submitEntry()" />
+      <label>👤 Cliente / Pessoa Relacionada</label>
+      <input type="text" id="entry-client" placeholder="Nome do cliente (ex: Ines Madalena, Jaime Gilmar...)" maxlength="100" />
     </div>
+
+    <div class="form-group">
+      <label>📦 O que foi lançado</label>
+      <select id="entry-item" onchange="onEntryItemChange()">
+        <option value="Mensalidade">💳 Mensalidade</option>
+        <option value="Instalação">🛠️ Instalação</option>
+        <option value="Manutenção">🔧 Manutenção</option>
+        <option value="Material / Equipamentos">📦 Material / Equipamentos</option>
+        <option value="Câmeras">📷 Câmeras</option>
+        <option value="Alarmes">🚨 Alarmes</option>
+        <option value="Outro">✏️ Outro (digitar descrição)</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="entry-desc-group" style="display:none">
+      <label>Descrição do item</label>
+      <input type="text" id="entry-desc" placeholder="Especifique o que foi lançado..." maxlength="80" />
+    </div>
+
     <div class="form-group">
       <label>Categoria</label>
       <select id="entry-cat">
         <option value="Câmeras">📷 Câmeras</option>
         <option value="Alarmes">🚨 Alarmes</option>
         <option value="Câmeras e Alarmes">📷🚨 Câmeras e Alarmes</option>
-        <option value="Outras">📦 Outras</option>
+        <option value="Geral / Outras">📦 Geral / Outras</option>
       </select>
     </div>
+
     <div class="form-group">
       <label>Observação (opcional)</label>
-      <input type="text" id="entry-obs" placeholder="Alguma observação adicional..." maxlength="120" />
+      <input type="text" id="entry-obs" placeholder="Alguma observação complementar..." maxlength="120" />
     </div>
+
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('entry')">Cancelar</button>
       <button class="btn btn-green" onclick="submitEntry()" id="submit-entry">✔ Confirmar Entrada</button>
@@ -1191,11 +1131,23 @@
       <input type="number" id="exit-value" placeholder="0,00" min="0.01" step="0.01"
              oninput="updatePreview('exit')" onkeydown="if(event.key==='Enter') submitExit()" />
     </div>
+
     <div class="form-group">
-      <label>Motivo da Saída</label>
-      <input type="text" id="exit-motivo" placeholder="Ex: Compra de material, Conta de luz..." maxlength="120"
+      <label>📝 O que foi lançado / Motivo da Saída</label>
+      <input type="text" id="exit-motivo" placeholder="Ex: Compra de cabos, Combustível, Conta de luz, Frete..." maxlength="120"
              onkeydown="if(event.key==='Enter') submitExit()" />
     </div>
+
+    <div class="form-group">
+      <label>👤 Pessoa / Favorecido / Fornecedor (opcional)</label>
+      <input type="text" id="exit-client" placeholder="Ex: Franklin, Marcelo, Posto Central, Papelaria..." maxlength="100" />
+    </div>
+
+    <div class="form-group">
+      <label>Observação (opcional)</label>
+      <input type="text" id="exit-obs" placeholder="Detalhes adicionais..." maxlength="120" />
+    </div>
+
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('exit')">Cancelar</button>
       <button class="btn btn-red" onclick="submitExit()" id="submit-exit">✔ Confirmar Saída</button>
@@ -1223,27 +1175,34 @@
       <input type="number" id="edit-value" placeholder="0,00" min="0.01" step="0.01"
              oninput="updateEditPreview()" />
     </div>
-    <div class="form-group">
-      <label>Descrição</label>
-      <input type="text" id="edit-desc" placeholder="Descrição..." maxlength="80" />
+
+    <div class="form-group" id="edit-client-group">
+      <label>👤 Cliente / Pessoa Relacionada</label>
+      <input type="text" id="edit-client" placeholder="Nome do cliente ou favorecido..." maxlength="100" />
     </div>
+
+    <div class="form-group">
+      <label>📝 O que foi lançado / Descrição</label>
+      <input type="text" id="edit-desc" placeholder="Descrição do lançamento..." maxlength="100" />
+    </div>
+
     <div class="form-group" id="edit-cat-group">
       <label>Categoria</label>
       <select id="edit-cat">
         <option value="Câmeras">📷 Câmeras</option>
         <option value="Alarmes">🚨 Alarmes</option>
         <option value="Câmeras e Alarmes">📷🚨 Câmeras e Alarmes</option>
-        <option value="Outras">📦 Outras</option>
+        <option value="Geral / Outras">📦 Geral / Outras</option>
+        <option value="Saída">📉 Saída</option>
+        <option value="Ajuste">⚖️ Ajuste</option>
       </select>
     </div>
-    <div class="form-group" id="edit-motivo-group" style="display:none">
-      <label>Motivo da Saída</label>
-      <input type="text" id="edit-motivo" placeholder="Motivo..." maxlength="120" />
-    </div>
+
     <div class="form-group">
-      <label>Observação (opcional)</label>
-      <input type="text" id="edit-obs" placeholder="Observação adicional..." maxlength="120" />
+      <label>Observação / Motivo</label>
+      <input type="text" id="edit-obs" placeholder="Observação adicional..." maxlength="140" />
     </div>
+
     <input type="hidden" id="edit-tx-id" />
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('edit')">Cancelar</button>
@@ -1253,18 +1212,136 @@
 </div>
 
 <!-- =========================================
-     MODAL: RELATÓRIO
+     MODAL: FECHAR CAIXA & CONFERÊNCIA FÍSICA
+========================================== -->
+<div class="modal-overlay" id="modal-close-cash">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">
+        🔒 Conferir &amp; Fechar Caixa
+        <span class="modal-badge warning">Conferência</span>
+      </div>
+      <button class="btn-close" onclick="closeModal('close-cash')">✕</button>
+    </div>
+
+    <p style="font-size:0.83rem;color:var(--text-muted);margin-bottom:14px;">
+      Resumo das movimentações do período atual (desde o último fechamento):
+    </p>
+
+    <div class="close-cash-summary">
+      <div class="ccs-row">
+        <span class="ccs-label">🟢 Saldo Inicial do Período</span>
+        <span class="ccs-val" id="ccs-opening-val">R$ 0,00</span>
+      </div>
+      <div class="ccs-row entry-row">
+        <span class="ccs-label">📈 (+) Entradas no Período</span>
+        <span class="ccs-val" id="ccs-entry-val" style="color:var(--green)">R$ 0,00</span>
+      </div>
+      <div class="ccs-row exit-row">
+        <span class="ccs-label">📉 (-) Saídas no Período</span>
+        <span class="ccs-val" id="ccs-exit-val" style="color:var(--red)">R$ 0,00</span>
+      </div>
+      <div class="ccs-row bal-row">
+        <span class="ccs-label">💰 (=) Saldo Esperado no Sistema</span>
+        <span class="ccs-val" id="ccs-expected-val" style="color:var(--yellow);font-size:1.1rem;">R$ 0,00</span>
+      </div>
+    </div>
+    <input type="hidden" id="ccs-expected-val-raw" value="0" />
+
+    <!-- Entrada do Valor Físico -->
+    <div class="form-group" style="margin-bottom:14px;">
+      <label style="color:var(--yellow);font-size:0.85rem;display:flex;align-items:center;gap:6px;">
+        <span>💵</span> <strong>VALOR NO CAIXA FÍSICO (R$)</strong>
+      </label>
+      <input type="number" id="ccs-physical-input" placeholder="0,00" step="0.01" min="0"
+             oninput="onPhysicalInputChange()"
+             style="font-size:1.25rem;font-weight:800;border-color:rgba(245,158,11,0.5);text-align:center;padding:14px;" />
+      <div style="font-size:0.73rem;color:var(--text-muted);margin-top:5px;">
+        Conte as cédulas e moedas presentes no caixa físico e digite acima o valor real.
+      </div>
+    </div>
+
+    <!-- Card de Comparação Dinâmica -->
+    <div id="ccs-diff-status-card" class="close-diff-card">
+      <div class="close-diff-title">💵 Aguardando contagem física</div>
+      <div class="close-diff-desc">Digite o valor real que está no caixa físico para que o sistema compare com o saldo esperado.</div>
+    </div>
+
+    <!-- Seção de Ajuste / Reajuste (mostrada quando há diferença) -->
+    <div id="ccs-adj-box" class="adj-section-box" style="display:none;">
+      <div class="adj-badge-header">
+        <span>⚖️</span> Ajuste / Reajuste Necessário
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div>
+          <label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Valor do Ajuste</label>
+          <input type="text" id="ccs-adj-val" readonly style="font-weight:800;color:var(--yellow);background:rgba(0,0,0,0.3);" />
+        </div>
+        <div>
+          <label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Saldo Final Fechado</label>
+          <div id="ccs-final-val" style="font-weight:800;font-size:1.05rem;padding:10px;color:var(--text);background:rgba(0,0,0,0.3);border-radius:12px;text-align:center;border:1px solid var(--border);">
+            R$ 0,00
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0;">
+        <label style="color:#fbbf24;">Motivo do Ajuste (Obrigatório para Auditoria):</label>
+        <textarea id="ccs-adj-reason" placeholder="Ex: Foi identificado posteriormente um pagamento que não havia sido lançado pelo cliente X / Diferença de troco / Reembolso pendente..." rows="2"></textarea>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">
+          Este motivo ficará salvo no histórico e aparecerá no relatório para conferência com o Fly.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('close-cash')">Cancelar</button>
+      <button class="btn btn-warning" id="btn-confirm-close-cash" onclick="confirmCloseCash()" style="flex:1;">
+        🔒 Confirmar Fechamento
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================
+     MODAL: RELATÓRIO PARA CONFERÊNCIA (FLY)
 ========================================== -->
 <div class="modal-overlay" id="modal-report">
-  <div class="modal" style="max-width: 540px;">
+  <div class="modal modal-report-dialog">
     <div class="modal-header">
-      <div class="modal-title">📊 Relatório do Caixa</div>
+      <div class="modal-title">
+        📊 Relatório para Conferência de Caixa (Fly)
+      </div>
       <button class="btn-close" onclick="closeModal('report')">✕</button>
     </div>
-    <div class="report-content" id="report-content"></div>
-    <div class="modal-footer">
+
+    <!-- Filtros de Período no Relatório -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        <button class="btn-period active" id="rep-period-btn-current" onclick="refreshReportPeriod('current')">Período Selecionado</button>
+        <button class="btn-period" onclick="refreshReportPeriod('today')">Hoje</button>
+        <button class="btn-period" onclick="refreshReportPeriod('yesterday')">Ontem</button>
+        <button class="btn-period" onclick="refreshReportPeriod('7days')">7 Dias</button>
+        <button class="btn-period" onclick="refreshReportPeriod('15days')">15 Dias</button>
+        <button class="btn-period" onclick="refreshReportPeriod('thisMonth')">Este Mês</button>
+        <button class="btn-period" onclick="refreshReportPeriod('all')">Todos</button>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-muted);" id="rep-period-indicator"></div>
+    </div>
+
+    <div class="modal-report-body" id="report-modal-body">
+      <!-- O conteúdo do relatório será injetado dinamicamente aqui -->
+    </div>
+
+    <div class="modal-footer" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
       <button class="btn btn-ghost" onclick="closeModal('report')">Fechar</button>
-      <button class="btn btn-primary" onclick="printReport()">🖨️ Imprimir / Salvar</button>
+      <button class="btn btn-ghost" onclick="exportReportCSV()" style="color:#22c55e;border-color:rgba(34,197,94,0.3);">
+        📥 Exportar Planilha (Excel / CSV)
+      </button>
+      <button class="btn btn-primary" onclick="printReport()">
+        🖨️ Imprimir / Salvar PDF
+      </button>
     </div>
   </div>
 </div>
@@ -1275,70 +1352,11 @@
 <div class="confirm-overlay" id="confirm-del">
   <div class="confirm-box">
     <div class="confirm-icon">🗑️</div>
-    <h3>Excluir lançamento?</h3>
-    <p>Esta ação não pode ser desfeita. O lançamento será removido permanentemente.</p>
+    <h3>Excluir Lançamento?</h3>
+    <p>Esta ação não pode ser desfeita. O lançamento será removido permanentemente do caixa e do histórico.</p>
     <div class="confirm-btns">
       <button class="btn btn-ghost" onclick="cancelDelete()">Cancelar</button>
-      <button class="btn btn-red"   onclick="confirmDelete()">Excluir</button>
-    </div>
-  </div>
-</div>
-
-<!-- =========================================
-     MODAL: FECHAR CAIXA
-========================================== -->
-<div class="modal-overlay" id="modal-close-cash">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-header">
-      <div class="modal-title">
-        🔒 Fechar Caixa
-        <span class="modal-badge" style="background:rgba(245,158,11,0.2);color:#f59e0b">Encerramento</span>
-      </div>
-      <button class="btn-close" onclick="closeModal('close-cash')">✕</button>
-    </div>
-
-    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">Resumo do período atual (desde o último fechamento):</p>
-
-    <div class="close-cash-summary" id="close-cash-summary">
-      <div class="ccs-row entry-row">
-        <span class="ccs-label">📈 Total de Entradas</span>
-        <span class="ccs-val" id="ccs-entry" style="color:var(--green)">R$ 0,00</span>
-      </div>
-      <div class="ccs-row exit-row">
-        <span class="ccs-label">📉 Total de Saídas</span>
-        <span class="ccs-val" id="ccs-exit" style="color:var(--red)">R$ 0,00</span>
-      </div>
-      <div class="ccs-row bal-row">
-        <span class="ccs-label">💰 Saldo do Período</span>
-        <span class="ccs-val" id="ccs-balance" style="color:var(--yellow)">R$ 0,00</span>
-      </div>
-      <div class="ccs-row" style="border-color:rgba(255,255,255,0.06)">
-        <span class="ccs-label">📋 Nº de Transações</span>
-        <span class="ccs-val" id="ccs-count" style="color:var(--text)">0</span>
-      </div>
-    </div>
-
-    <div class="close-cash-warning">
-      ⚠️ Ao confirmar, o <strong>saldo é zerado</strong> e o novo período começa do zero. Os lançamentos anteriores ficam <strong>preservados no histórico</strong> e ainda podem ser <strong>editados, excluídos ou complementados</strong> normalmente a qualquer momento.
-    </div>
-
-    <div class="form-group" style="margin-top:16px;margin-bottom:0">
-      <label style="display:block;font-size:0.78rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
-        💵 Troco para o próximo período (opcional)
-      </label>
-      <input type="number" id="troco-value" placeholder="0,00 — deixe vazio se não houver" min="0" step="0.01"
-        style="border-color:rgba(245,158,11,0.35);" />
-      <div style="font-size:0.72rem;color:var(--text-muted);margin-top:5px;line-height:1.5;">
-        Se informado, será lançado automaticamente como “Entrada — Troco do caixa anterior” no novo período.
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('close-cash')">Cancelar</button>
-      <button class="btn" id="btn-confirm-close-cash" onclick="confirmCloseCash()"
-        style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;box-shadow:0 4px 16px rgba(245,158,11,0.35);flex:1">
-        🔒 Confirmar Fechamento
-      </button>
+      <button class="btn btn-red" onclick="confirmDelete()">Excluir</button>
     </div>
   </div>
 </div>
@@ -1380,17 +1398,32 @@ try {
 }
 
 let currentUser = null;
+let selectedUser = null;
 let transactions = [];
-let currentFilter = 'all';
 let pendingDeleteId = null;
 
-// Last cash closing record — { id, closed_at, closed_by, entry_total, exit_total, balance, tx_count }
+// Period Filter State
+let currentPeriod = {
+  preset: 'today',
+  startDate: null, // 'YYYY-MM-DD'
+  endDate: null,   // 'YYYY-MM-DD'
+  label: 'Hoje'
+};
+
+// History Filter State
+let currentHistoryFilter = 'all'; // 'all', 'entry', 'exit', 'adjustment', 'closing'
+
+// Last cash closing record
 let lastClosing = null;
 
 // Calendar state
 let calYear  = new Date().getFullYear();
 let calMonth = new Date().getMonth(); // 0-based
-let selectedDate = null; // 'DD/MM/YYYY' string
+let selectedCalDate = null; // 'DD/MM/YYYY'
+
+const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
 /* ===========================
    INIT
@@ -1399,6 +1432,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // Load saved theme
   const savedTheme = localStorage.getItem('caixavigi_theme') || 'dark';
   applyTheme(savedTheme);
+
+  // Set default period: today
+  setPeriodPreset('today', false);
 
   const session = localStorage.getItem(SESSION_KEY);
   if (session) {
@@ -1439,8 +1475,6 @@ function updateHeaderDate() {
 /* ===========================
    AUTH
 =========================== */
-let selectedUser = null;
-
 function selectUser(name) {
   selectedUser = name;
   ['carol','camili','keithi'].forEach(u => document.getElementById('u-'+u).classList.remove('selected'));
@@ -1489,7 +1523,8 @@ function doLogout() {
 function showApp() {
   document.getElementById('login-screen').classList.remove('active');
   document.getElementById('app-screen').classList.add('active');
-  // Header: name + photo
+
+  // Header user info
   document.getElementById('header-username').textContent = currentUser;
   const photoMap = { Carol: 'CAROL.jpeg', Camili: 'CAMILI.jpeg', Keithi: 'KEITHI.jpeg' };
   const photo = photoMap[currentUser];
@@ -1499,89 +1534,236 @@ function showApp() {
   } else {
     avatarEl.textContent = currentUser[0].toUpperCase();
   }
+
   updateHeaderDate();
   loadTransactions();
-
-  // Garantia extra: criar botão Fechar Caixa via JS se não existir ou estiver oculto
-  (function ensureFecharCaixaBtn() {
-    let btn = document.getElementById('btn-close-cash-main');
-    if (!btn) {
-      // Criar container e botão do zero
-      const container = document.createElement('div');
-      container.id = 'fechar-caixa-container';
-      container.style.cssText = 'margin-bottom:28px;';
-
-      btn = document.createElement('button');
-      btn.id = 'btn-close-cash-main';
-      btn.onclick = openCloseCashModal;
-      container.appendChild(btn);
-
-      // Inserir antes do calendário
-      const calSection = document.querySelector('.calendar-section');
-      if (calSection) {
-        calSection.parentNode.insertBefore(container, calSection);
-      } else {
-        const main = document.querySelector('.main');
-        if (main) main.appendChild(container);
-      }
-    }
-
-    // Garantir estilo e visibilidade
-    const s = [
-      'display:flex',
-      'width:100%',
-      'padding:16px 28px',
-      'border-radius:14px',
-      'font-size:1rem',
-      'font-weight:700',
-      'align-items:center',
-      'justify-content:center',
-      'gap:10px',
-      'cursor:pointer',
-      'border:none',
-      'font-family:Inter,sans-serif',
-      'letter-spacing:0.2px',
-      'background:linear-gradient(135deg,#f59e0b,#d97706)',
-      'color:#fff',
-      'box-shadow:0 6px 24px rgba(245,158,11,0.4)',
-      'transition:all 0.2s ease',
-      'margin-top:0',
-    ].join(';');
-    btn.setAttribute('style', s);
-    btn.innerHTML = '<span style="font-size:1.3rem">🔒</span>&nbsp; Fechar Caixa do Dia';
-    btn.onclick = openCloseCashModal;
-  })();
 }
 
 /* ===========================
-   TRANSACTIONS
+   DATE UTILS & PARSING
 =========================== */
+function toLocalISO(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function formatDateBR(isoStr) {
+  if (!isoStr) return '';
+  const parts = isoStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return isoStr;
+}
+
+function getTxDateISO(t) {
+  if (!t) return '';
+  if (t.dateStr && typeof t.dateStr === 'string') {
+    const parts = t.dateStr.trim().split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  if (t.date) {
+    const d = new Date(t.date);
+    if (!isNaN(d.getTime())) return toLocalISO(d);
+  }
+  return '';
+}
+
+function getTodayBR() {
+  return new Date().toLocaleDateString('pt-BR');
+}
+
+function getTimeNow() {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+/* ===========================
+   FILTRO DE PERÍODO (REQUISITO 1)
+=========================== */
+function setPeriodPreset(preset, triggerRender = true) {
+  currentPeriod.preset = preset;
+  const now = new Date();
+  const todayISO = toLocalISO(now);
+
+  if (preset === 'today') {
+    currentPeriod.startDate = todayISO;
+    currentPeriod.endDate = todayISO;
+    currentPeriod.label = `Hoje (${formatDateBR(todayISO)})`;
+  } else if (preset === 'yesterday') {
+    const yest = new Date(now);
+    yest.setDate(now.getDate() - 1);
+    const yestISO = toLocalISO(yest);
+    currentPeriod.startDate = yestISO;
+    currentPeriod.endDate = yestISO;
+    currentPeriod.label = `Ontem (${formatDateBR(yestISO)})`;
+  } else if (preset === '7days') {
+    const d7 = new Date(now);
+    d7.setDate(now.getDate() - 6);
+    const d7ISO = toLocalISO(d7);
+    currentPeriod.startDate = d7ISO;
+    currentPeriod.endDate = todayISO;
+    currentPeriod.label = `Últimos 7 dias (${formatDateBR(d7ISO)} a ${formatDateBR(todayISO)})`;
+  } else if (preset === '15days') {
+    const d15 = new Date(now);
+    d15.setDate(now.getDate() - 14);
+    const d15ISO = toLocalISO(d15);
+    currentPeriod.startDate = d15ISO;
+    currentPeriod.endDate = todayISO;
+    currentPeriod.label = `Últimos 15 dias (${formatDateBR(d15ISO)} a ${formatDateBR(todayISO)})`;
+  } else if (preset === 'thisMonth') {
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    currentPeriod.startDate = toLocalISO(first);
+    currentPeriod.endDate = toLocalISO(last);
+    currentPeriod.label = `Este Mês (${MONTHS[now.getMonth()]} ${now.getFullYear()})`;
+  } else if (preset === 'lastMonth') {
+    const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const last = new Date(now.getFullYear(), now.getMonth(), 0);
+    const monthIdx = (now.getMonth() - 1 + 12) % 12;
+    const yearNum = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    currentPeriod.startDate = toLocalISO(first);
+    currentPeriod.endDate = toLocalISO(last);
+    currentPeriod.label = `Mês Anterior (${MONTHS[monthIdx]} ${yearNum})`;
+  } else if (preset === 'all') {
+    currentPeriod.startDate = null;
+    currentPeriod.endDate = null;
+    currentPeriod.label = `Todo o Histórico`;
+  }
+
+  // Update inputs
+  const startInput = document.getElementById('period-start-input');
+  const endInput = document.getElementById('period-end-input');
+  if (startInput) startInput.value = currentPeriod.startDate || '';
+  if (endInput)   endInput.value = currentPeriod.endDate || '';
+
+  // Update active button state
+  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById(`btn-period-${preset}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const labelEl = document.getElementById('period-active-label');
+  if (labelEl) labelEl.textContent = currentPeriod.label;
+
+  // Clear calendar day selection when switching presets
+  selectedCalDate = null;
+
+  if (triggerRender) {
+    renderAll();
+  }
+}
+
+function applyCustomDateFilter() {
+  const startVal = document.getElementById('period-start-input').value;
+  const endVal = document.getElementById('period-end-input').value;
+
+  if (!startVal && !endVal) {
+    setPeriodPreset('all');
+    return;
+  }
+
+  currentPeriod.preset = 'custom';
+  currentPeriod.startDate = startVal || endVal;
+  currentPeriod.endDate = endVal || startVal;
+
+  if (currentPeriod.startDate > currentPeriod.endDate) {
+    // Swap if inverted
+    const temp = currentPeriod.startDate;
+    currentPeriod.startDate = currentPeriod.endDate;
+    currentPeriod.endDate = temp;
+    document.getElementById('period-start-input').value = currentPeriod.startDate;
+    document.getElementById('period-end-input').value = currentPeriod.endDate;
+  }
+
+  if (currentPeriod.startDate === currentPeriod.endDate) {
+    currentPeriod.label = `Dia ${formatDateBR(currentPeriod.startDate)}`;
+  } else {
+    currentPeriod.label = `De ${formatDateBR(currentPeriod.startDate)} até ${formatDateBR(currentPeriod.endDate)}`;
+  }
+
+  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+  const labelEl = document.getElementById('period-active-label');
+  if (labelEl) labelEl.textContent = currentPeriod.label;
+
+  selectedCalDate = null;
+  renderAll();
+  showToast(`Filtro aplicado: ${currentPeriod.label}`, 'success');
+}
+
+function isTxInCurrentPeriod(t) {
+  if (!currentPeriod.startDate || !currentPeriod.endDate) return true;
+  const tISO = getTxDateISO(t);
+  if (!tISO) return true;
+  return tISO >= currentPeriod.startDate && tISO <= currentPeriod.endDate;
+}
+
 /* ===========================
    SUPABASE MAPPING HELPERS
 =========================== */
 function mapTxToDb(tx) {
+  // Store client in observation with structured tag [Cliente: ...]
+  let formattedDesc = tx.desc || '';
+  if (tx.client && tx.client.trim()) {
+    formattedDesc = `${tx.client.trim()} — ${formattedDesc}`;
+  }
+
+  let formattedObs = tx.obs || '';
+  if (tx.client && tx.client.trim() && !formattedObs.includes('[Cliente:')) {
+    formattedObs = `[Cliente: ${tx.client.trim()}] ${formattedObs}`.trim();
+  }
+
   return {
     id: String(tx.id),
     type: tx.type,
-    value: parseFloat(tx.value),
-    desc_text: tx.desc,
-    category: tx.cat,
-    observation: tx.obs || '',
-    username: tx.user,
-    created_at: tx.date,
+    value: parseFloat(tx.value) || 0,
+    desc_text: formattedDesc,
+    category: tx.cat || 'Geral',
+    observation: formattedObs,
+    username: tx.user || currentUser,
+    created_at: tx.date || new Date().toISOString(),
     date_str: tx.dateStr,
     time_str: tx.timeStr
   };
 }
 
 function mapDbToTx(db) {
+  let client = '';
+  let desc = db.desc_text || '';
+  let obs = db.observation || '';
+  let cat = db.category || '';
+  let type = db.type;
+
+  // Extract client from observation tag [Cliente: ...]
+  if (obs.includes('[Cliente:')) {
+    const m = obs.match(/\[Cliente:\s*([^\]]+)\]/i);
+    if (m) client = m[1].trim();
+    obs = obs.replace(/\[Cliente:\s*[^\]]+\]/gi, '').trim();
+  } else if (desc.includes(' — ')) {
+    const parts = desc.split(' — ');
+    client = parts[0].trim();
+    desc = parts.slice(1).join(' — ').trim();
+  } else if (type === 'entry') {
+    // Heuristic for existing records where customer name was in desc_text and item in observation
+    const commonItems = ['MENSALIDADE', 'MATERIAL', 'MATERIAL EXTRA', 'INSTALAÇÃO', 'INSTALACAO', 'MANUTENÇÃO', 'MANUTENCAO'];
+    const obsUpper = obs.trim().toUpperCase();
+    if (commonItems.includes(obsUpper)) {
+      client = desc;
+      desc = obs.trim();
+      obs = '';
+    }
+  }
+
   return {
-    id: db.id,
-    type: db.type,
-    value: parseFloat(db.value),
-    desc: db.desc_text,
-    cat: db.category,
-    obs: db.observation,
+    id: String(db.id),
+    type: type,
+    value: parseFloat(db.value) || 0,
+    desc: desc,
+    client: client,
+    cat: cat,
+    obs: obs,
     user: db.username,
     date: db.created_at,
     dateStr: db.date_str,
@@ -1589,79 +1771,35 @@ function mapDbToTx(db) {
   };
 }
 
+/* ===========================
+   CARREGAR & SALVAR TRANSAÇÕES
+=========================== */
 async function loadTransactions() {
   if (useCloud && supabaseClient) {
     try {
-      // Load last closing first
-      await loadLastClosing();
-
       const { data, error } = await supabaseClient
         .from('transactions')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
-      
       transactions = (data || []).map(mapDbToTx);
     } catch(e) {
-      console.error("Erro ao carregar transações do Supabase, usando local:", e);
+      console.error("Erro ao carregar do Supabase, usando local:", e);
       showToast("Modo Offline: Carregando dados locais.", "error");
       loadLocalTransactions();
     }
   } else {
     loadLocalTransactions();
-    loadLastClosingLocal();
   }
+
+  // Detect last closing
+  const closings = transactions.filter(t => t.type === 'closing')
+    .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  lastClosing = closings.length > 0 ? closings[0] : null;
+
   renderAll();
   updateClosingBanner();
-}
-
-/* ===========================
-   CASH CLOSING HELPERS
-=========================== */
-async function loadLastClosing() {
-  if (!useCloud || !supabaseClient) { loadLastClosingLocal(); return; }
-  try {
-    const { data, error } = await supabaseClient
-      .from('cash_closings')
-      .select('*')
-      .order('closed_at', { ascending: false })
-      .limit(1);
-    if (error) throw error;
-    lastClosing = (data && data.length > 0) ? data[0] : null;
-    if (lastClosing) localStorage.setItem('caixavigi_last_closing', JSON.stringify(lastClosing));
-  } catch(e) {
-    console.warn('Erro ao buscar fechamento, usando local:', e);
-    loadLastClosingLocal();
-  }
-}
-
-function loadLastClosingLocal() {
-  try {
-    const raw = localStorage.getItem('caixavigi_last_closing');
-    lastClosing = raw ? JSON.parse(raw) : null;
-  } catch(e) { lastClosing = null; }
-}
-
-/* Returns only transactions that happened AFTER the last closing */
-function getActiveTx() {
-  if (!lastClosing) return transactions;
-  const cutoff = new Date(lastClosing.closed_at).getTime();
-  return transactions.filter(t => new Date(t.date).getTime() > cutoff);
-}
-
-function updateClosingBanner() {
-  const banner = document.getElementById('closing-banner');
-  const bannerText = document.getElementById('closing-banner-text');
-  if (!banner) return;
-  if (!lastClosing) { banner.classList.add('hidden'); return; }
-  banner.classList.remove('hidden');
-  const closedDate = new Date(lastClosing.closed_at).toLocaleString('pt-BR');
-  const by = lastClosing.closed_by || 'sistema';
-  bannerText.innerHTML =
-    `<strong>Período anterior fechado</strong> em ${closedDate} por <strong>${escHtml(by)}</strong>. ` +
-    `Saldo encerrado: <strong>${fmt(parseFloat(lastClosing.balance || 0))}</strong>. Novo período ativo. ` +
-    `<span class="cb-edit-note">✏️ Lançamentos anteriores ainda podem ser editados, excluídos ou complementados normalmente.</span>`;
 }
 
 function loadLocalTransactions() {
@@ -1676,19 +1814,30 @@ function saveLocalTransactions() {
   localStorage.setItem('caixavigi_transactions', JSON.stringify(transactions));
 }
 
-function saveTransactions() {
-  if (!useCloud) {
-    saveLocalTransactions();
+async function insertTxRecord(tx) {
+  if (useCloud && supabaseClient) {
+    try {
+      const dbRow = mapTxToDb(tx);
+      const { error } = await supabaseClient.from('transactions').insert([dbRow]);
+      if (error) throw error;
+      transactions.unshift(tx);
+      return;
+    } catch (e) {
+      console.error("Erro ao inserir no Supabase, salvando local:", e);
+    }
   }
+  transactions.unshift(tx);
+  saveLocalTransactions();
 }
 
-async function addTransaction(type, value, desc, cat, obs) {
+async function addTransaction(type, value, desc, cat, obs, client = '') {
   const now = new Date();
   const tx = {
     id: String(Date.now() + Math.random()),
     type,
-    value: parseFloat(value),
+    value: parseFloat(value) || 0,
     desc: desc.trim() || (type === 'entry' ? 'Entrada' : 'Saída'),
+    client: client.trim(),
     cat,
     obs: obs.trim(),
     user: currentUser,
@@ -1697,34 +1846,10 @@ async function addTransaction(type, value, desc, cat, obs) {
     timeStr: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
   };
 
-  if (useCloud && supabaseClient) {
-    try {
-      const dbRow = mapTxToDb(tx);
-      const { error } = await supabaseClient
-        .from('transactions')
-        .insert([dbRow]);
-      
-      if (error) throw error;
-
-      transactions.unshift(tx);
-      renderAll();
-      showToast(
-        type === 'entry' ? 'Entrada registrada com sucesso!' : 'Saída registrada com sucesso!',
-        type === 'entry' ? 'success' : 'error'
-      );
-      return;
-    } catch (e) {
-      console.error("Erro ao salvar transação no Supabase, usando local:", e);
-      showToast("Erro na nuvem. Salvo localmente.", "error");
-    }
-  }
-
-  // Local fallback
-  transactions.unshift(tx);
-  saveLocalTransactions();
+  await insertTxRecord(tx);
   renderAll();
   showToast(
-    type === 'entry' ? 'Entrada registrada localmente!' : 'Saída registrada localmente!',
+    type === 'entry' ? 'Entrada registrada com sucesso!' : 'Saída registrada com sucesso!',
     type === 'entry' ? 'success' : 'error'
   );
 }
@@ -1736,105 +1861,163 @@ async function deleteTransaction(id) {
         .from('transactions')
         .delete()
         .eq('id', String(id));
-        
       if (error) throw error;
-
-      transactions = transactions.filter(t => String(t.id) !== String(id));
-      renderAll();
-      showToast('Lançamento excluído.', 'error');
-      return;
     } catch (e) {
-      console.error("Erro ao excluir transação no Supabase:", e);
-      showToast("Erro na nuvem. Excluído localmente.", "error");
+      console.error("Erro ao excluir do Supabase:", e);
     }
   }
 
-  // Local fallback
   transactions = transactions.filter(t => String(t.id) !== String(id));
   saveLocalTransactions();
+
+  // Re-detect last closing
+  const closings = transactions.filter(t => t.type === 'closing')
+    .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  lastClosing = closings.length > 0 ? closings[0] : null;
+
   renderAll();
-  showToast('Lançamento local excluído.', 'error');
+  updateClosingBanner();
+  showToast('Lançamento excluído.', 'error');
 }
 
 /* ===========================
-   CARDS / STATS
+   CÁLCULO DE MÉTRICAS DO PERÍODO
 =========================== */
-function getToday() {
-  return new Date().toLocaleDateString('pt-BR');
-}
+function calculatePeriodMetrics(startISO, endISO) {
+  let initialBalance = 0;
+  let entriesSum = 0;
+  let entriesCount = 0;
+  let exitsSum = 0;
+  let exitsCount = 0;
+  let adjustmentsSum = 0;
+  let adjustmentsCount = 0;
+  let closingsCount = 0;
 
-function renderStats() {
-  const today = getToday();
-  const activeTx = getActiveTx();          // Only tx after last closing
-  const todayTx  = activeTx.filter(t => t.dateStr === today);
-
-  const totalEntry = activeTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
-  const totalExit  = activeTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
-  const balance    = totalEntry - totalExit;
-
-  const todayEntry = todayTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
-  const todayExit  = todayTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
-  const todayEntryCount = todayTx.filter(t => t.type === 'entry').length;
-  const todayExitCount  = todayTx.filter(t => t.type === 'exit').length;
-
-  const periodLabel = lastClosing ? 'Período atual' : 'Saldo Atual';
-
-  document.getElementById('card-balance').textContent = fmt(balance);
-  document.getElementById('card-balance').className = 'card-value ' + (balance >= 0 ? 'green' : 'red');
-  document.getElementById('card-balance-sub').textContent =
-    lastClosing
-      ? `${activeTx.length} tx no período atual`
-      : `${transactions.length} transação(ões) no total`;
-
-  // Update card label/period for balance card
-  const balPeriodEl = document.querySelector('.card-balance .card-period');
-  if (balPeriodEl) balPeriodEl.textContent = periodLabel;
-
-  document.getElementById('card-entries').textContent = fmt(todayEntry);
-  document.getElementById('card-entries-sub').textContent = `${todayEntryCount} lançamento(s) hoje`;
-
-  document.getElementById('card-exits').textContent = fmt(todayExit);
-  document.getElementById('card-exits-sub').textContent = `${todayExitCount} lançamento(s) hoje`;
-
-  document.getElementById('card-count').textContent = activeTx.length;
-  document.getElementById('card-count-sub').textContent = `${todayTx.length} hoje`;
-}
-
-/* ===========================
-   HISTORY RENDER
-=========================== */
-function setFilter(f) {
-  currentFilter = f;
-  selectedDate = null;
-  ['all','entry','exit','today'].forEach(k => {
-    document.getElementById('filter-'+k).classList.toggle('active', k === f);
+  // Chronological sort ascending for calculation
+  const sorted = [...transactions].sort((a, b) => {
+    return new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime();
   });
-  // Clear calendar selection
-  document.querySelectorAll('.cal-day.cal-selected').forEach(d => d.classList.remove('cal-selected'));
-  document.getElementById('day-summary-content').innerHTML = `<div class="day-no-select"><div class="nsi">📅</div><p>Selecione um dia no calendário para ver o resumo.</p></div>`;
-  document.getElementById('history-title').textContent = '📋 Histórico de Lançamentos';
+
+  sorted.forEach(t => {
+    const tISO = getTxDateISO(t);
+    const val = parseFloat(t.value) || 0;
+
+    if (startISO && tISO < startISO) {
+      // Prior transactions contribute to initial balance of this period
+      if (t.type === 'entry') initialBalance += val;
+      else if (t.type === 'exit') initialBalance -= val;
+      else if (t.type === 'adjustment') initialBalance += val;
+    } else if (!startISO || (tISO >= startISO && (!endISO || tISO <= endISO))) {
+      // Transactions inside the period
+      if (t.type === 'entry') {
+        entriesSum += val;
+        entriesCount++;
+      } else if (t.type === 'exit') {
+        exitsSum += val;
+        exitsCount++;
+      } else if (t.type === 'adjustment') {
+        adjustmentsSum += val;
+        adjustmentsCount++;
+      } else if (t.type === 'closing') {
+        closingsCount++;
+      }
+    }
+  });
+
+  const finalBalance = initialBalance + entriesSum - exitsSum + adjustmentsSum;
+  const periodResult = entriesSum - exitsSum + adjustmentsSum;
+
+  return {
+    initialBalance,
+    entriesSum,
+    entriesCount,
+    exitsSum,
+    exitsCount,
+    adjustmentsSum,
+    adjustmentsCount,
+    closingsCount,
+    periodResult,
+    finalBalance
+  };
+}
+
+/* ===========================
+   CARDS / STATS RENDER
+=========================== */
+function renderStats() {
+  const metrics = calculatePeriodMetrics(currentPeriod.startDate, currentPeriod.endDate);
+
+  // Card 1: Saldo do Período
+  const balEl = document.getElementById('card-balance');
+  balEl.textContent = fmt(metrics.finalBalance);
+  balEl.className = 'card-value ' + (metrics.finalBalance >= 0 ? 'green' : 'red');
+
+  const balPeriodEl = document.getElementById('card-balance-period');
+  if (balPeriodEl) balPeriodEl.textContent = currentPeriod.preset === 'today' ? 'Saldo Atual' : 'Saldo do Período';
+
+  const balSubEl = document.getElementById('card-balance-sub');
+  if (balSubEl) {
+    balSubEl.innerHTML = `Inicial: <strong>${fmt(metrics.initialBalance)}</strong> &bull; Mov.: <strong>${metrics.periodResult >= 0 ? '+' : ''}${fmt(metrics.periodResult)}</strong>`;
+  }
+
+  // Card 2: Entradas no Período
+  document.getElementById('card-entries').textContent = fmt(metrics.entriesSum);
+  document.getElementById('card-entries-sub').textContent = `${metrics.entriesCount} lançamento(s) no período`;
+
+  // Card 3: Saídas no Período
+  document.getElementById('card-exits').textContent = fmt(metrics.exitsSum);
+  document.getElementById('card-exits-sub').textContent = `${metrics.exitsCount} lançamento(s) no período`;
+
+  // Card 4: Ajustes no Período
+  const adjValEl = document.getElementById('card-adjustments');
+  const adjSubEl = document.getElementById('card-adjustments-sub');
+  adjValEl.textContent = `${metrics.adjustmentsCount} ajuste(s)`;
+  if (metrics.adjustmentsCount > 0) {
+    adjValEl.className = 'card-value yellow';
+    adjSubEl.innerHTML = `Total: <strong>${metrics.adjustmentsSum >= 0 ? '+' : ''}${fmt(metrics.adjustmentsSum)}</strong>`;
+  } else {
+    adjValEl.className = 'card-value';
+    adjSubEl.textContent = 'Nenhuma divergência no período';
+  }
+}
+
+/* ===========================
+   HISTÓRICO & SEQUÊNCIA DO CAIXA (REQUISITO 2 & 4)
+=========================== */
+function setHistoryFilter(f) {
+  currentHistoryFilter = f;
+  ['all','entry','exit','adjustment','closing'].forEach(k => {
+    const el = document.getElementById('filter-'+(k === 'closing' ? 'closings' : k));
+    if (el) el.classList.toggle('active', k === f);
+  });
   renderHistory();
 }
 
-function getFiltered() {
-  const today = getToday();
+function getFilteredTransactions() {
   return transactions.filter(t => {
-    if (currentFilter === 'date')  return t.dateStr === selectedDate;
-    if (currentFilter === 'all')   return true;
-    if (currentFilter === 'today') return t.dateStr === today;
-    return t.type === currentFilter;
+    // 1. Must be in current period
+    if (!isTxInCurrentPeriod(t)) return false;
+
+    // 2. Filter by type
+    if (currentHistoryFilter === 'all') return true;
+    if (currentHistoryFilter === 'entry') return t.type === 'entry';
+    if (currentHistoryFilter === 'exit') return t.type === 'exit';
+    if (currentHistoryFilter === 'adjustment') return t.type === 'adjustment';
+    if (currentHistoryFilter === 'closing') return t.type === 'closing' || t.type === 'opening';
+    return true;
   });
 }
 
 function renderHistory() {
   const list = document.getElementById('history-list');
-  const filtered = getFiltered();
+  const filtered = getFilteredTransactions();
 
   if (filtered.length === 0) {
-    list.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">📭</div>
-      <p>Nenhum lançamento encontrado.</p>
-    </div>`;
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p>Nenhum lançamento encontrado para o período selecionado (${currentPeriod.label}).</p>
+      </div>`;
     return;
   }
 
@@ -1847,44 +2030,123 @@ function renderHistory() {
     const chipInner   = userPhoto
       ? `<img src="${userPhoto}" alt="${escHtml(t.user)}" class="chip-photo" onerror="this.outerHTML='<span class=chip-dot>${userInitial}</span>'" />`
       : `<span class="chip-dot">${userInitial}</span>`;
-    return `
-    <div class="tx-item" id="tx-${t.id}">
-      <div class="tx-dot ${t.type}">${t.type === 'entry' ? '📈' : '📉'}</div>
-      <div class="tx-info">
-        <div class="tx-desc">${escHtml(t.desc)}</div>
-        <div class="tx-meta">
-          ${escHtml(t.cat)} &bull; ${t.dateStr} &bull; ${t.timeStr}
-          ${t.obs ? ' &bull; ' + escHtml(t.obs) : ''}
-        </div>
-      </div>
-      <div class="tx-amount ${t.type}">${t.type === 'entry' ? '+' : '-'}${fmt(t.value)}</div>
-      <span class="user-chip ${userKey}">
-        ${chipInner}
-        ${escHtml(t.user)}
-      </span>
-      <div class="tx-actions">
-        <button class="btn-edit" onclick="openEditModal(${t.id})" title="Editar">✏️</button>
-        <button class="btn-del" onclick="requestDelete(${t.id})" title="Excluir">🗑️</button>
-      </div>
-    </div>
-  `;
-  }).join('');
 
+    // 1. INÍCIO DO CAIXA
+    if (t.type === 'opening') {
+      return `
+        <div class="tx-item opening" id="tx-${t.id}">
+          <div class="tx-dot opening">🟢</div>
+          <div class="tx-info">
+            <div class="tx-client-highlight" style="color:#38bdf8">
+              <span>INÍCIO DO CAIXA</span>
+              <span class="modal-badge" style="background:rgba(56,189,248,0.2);color:#38bdf8">Saldo Transportado</span>
+            </div>
+            <div class="tx-desc">${escHtml(t.obs || t.desc)}</div>
+            <div class="tx-meta">${t.dateStr} &bull; ${t.timeStr}</div>
+          </div>
+          <div class="tx-amount opening">${fmt(t.value)}</div>
+          <span class="user-chip ${userKey}">${chipInner} ${escHtml(t.user)}</span>
+          <div class="tx-actions">
+            <button class="btn-del" onclick="requestDelete('${t.id}')" title="Excluir">🗑️</button>
+          </div>
+        </div>`;
+    }
+
+    // 2. FECHAMENTO DO CAIXA
+    if (t.type === 'closing') {
+      return `
+        <div class="tx-item closing" id="tx-${t.id}">
+          <div class="tx-dot closing">🔒</div>
+          <div class="tx-info">
+            <div class="tx-client-highlight" style="color:#f59e0b">
+              <span>FECHAMENTO DO CAIXA</span>
+              <span class="modal-badge warning">Encerramento</span>
+            </div>
+            <div class="tx-desc">${escHtml(t.obs || t.desc)}</div>
+            <div class="tx-meta">${t.dateStr} &bull; ${t.timeStr}</div>
+          </div>
+          <div class="tx-amount closing">${fmt(t.value)}</div>
+          <span class="user-chip ${userKey}">${chipInner} ${escHtml(t.user)}</span>
+          <div class="tx-actions">
+            <button class="btn-del" onclick="requestDelete('${t.id}')" title="Excluir">🗑️</button>
+          </div>
+        </div>`;
+    }
+
+    // 3. AJUSTE DE CAIXA
+    if (t.type === 'adjustment') {
+      const isPos = t.value >= 0;
+      return `
+        <div class="tx-item adjustment" id="tx-${t.id}">
+          <div class="tx-dot adjustment">⚖️</div>
+          <div class="tx-info">
+            <div class="tx-client-highlight" style="color:var(--yellow)">
+              <span>AJUSTE / REAJUSTE DE CAIXA</span>
+              <span class="modal-badge" style="background:rgba(245,158,11,0.2);color:#f59e0b">Auditoria Fly</span>
+            </div>
+            <div class="tx-desc" style="color:#fbbf24"><strong>Motivo:</strong> ${escHtml(t.obs || t.desc)}</div>
+            <div class="tx-meta">${t.dateStr} &bull; ${t.timeStr}</div>
+          </div>
+          <div class="tx-amount adjustment">${isPos ? '+' : ''}${fmt(t.value)}</div>
+          <span class="user-chip ${userKey}">${chipInner} ${escHtml(t.user)}</span>
+          <div class="tx-actions">
+            <button class="btn-edit" onclick="openEditModal('${t.id}')" title="Editar">✏️</button>
+            <button class="btn-del" onclick="requestDelete('${t.id}')" title="Excluir">🗑️</button>
+          </div>
+        </div>`;
+    }
+
+    // 4. ENTRADA OU SAÍDA NORMAL
+    const isEntry = t.type === 'entry';
+    const mainTitle = t.client
+      ? `<strong>${escHtml(t.client)}</strong> <span style="font-weight:400;color:var(--text-muted);font-size:0.8rem;">— ${escHtml(t.desc)}</span>`
+      : escHtml(t.desc);
+
+    return `
+      <div class="tx-item" id="tx-${t.id}">
+        <div class="tx-dot ${t.type}">${isEntry ? '📈' : '📉'}</div>
+        <div class="tx-info">
+          <div class="tx-client-highlight">${mainTitle}</div>
+          <div class="tx-meta">
+            ${escHtml(t.cat)} &bull; ${t.dateStr} &bull; ${t.timeStr}
+            ${t.obs ? ' &bull; ' + escHtml(t.obs) : ''}
+          </div>
+        </div>
+        <div class="tx-amount ${t.type}">${isEntry ? '+' : '-'}${fmt(t.value)}</div>
+        <span class="user-chip ${userKey}">${chipInner} ${escHtml(t.user)}</span>
+        <div class="tx-actions">
+          <button class="btn-edit" onclick="openEditModal('${t.id}')" title="Editar">✏️</button>
+          <button class="btn-del" onclick="requestDelete('${t.id}')" title="Excluir">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function updateClosingBanner() {
+  const banner = document.getElementById('closing-banner');
+  const bannerText = document.getElementById('closing-banner-text');
+  if (!banner) return;
+  if (!lastClosing) { banner.classList.add('hidden'); return; }
+
+  banner.classList.remove('hidden');
+  const closedDate = new Date(lastClosing.date || lastClosing.created_at).toLocaleString('pt-BR');
+  const by = lastClosing.user || 'sistema';
+  bannerText.innerHTML =
+    `<strong>Último fechamento de caixa:</strong> realizado em ${closedDate} por <strong>${escHtml(by)}</strong>. ` +
+    `Saldo final encerrado: <strong>${fmt(parseFloat(lastClosing.value || 0))}</strong>. ` +
+    `<span class="cb-edit-note">✏️ Todos os lançamentos anteriores permanecem registrados no histórico e relatório.</span>`;
 }
 
 function renderAll() {
   renderStats();
   renderCalendar();
   renderHistory();
+  updateClosingBanner();
 }
 
 /* ===========================
-   CALENDAR
+   CALENDÁRIO INTERATIVO
 =========================== */
-const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
 function renderCalendar() {
   const titleEl = document.getElementById('cal-title');
   const gridEl  = document.getElementById('cal-grid');
@@ -1895,31 +2157,28 @@ function renderCalendar() {
   // Build a map: dateStr -> {entry, exit}
   const txMap = {};
   transactions.forEach(t => {
+    if (!t.dateStr) return;
     if (!txMap[t.dateStr]) txMap[t.dateStr] = { entry: 0, exit: 0 };
-    txMap[t.dateStr][t.type]++;
+    if (t.type === 'entry') txMap[t.dateStr].entry++;
+    if (t.type === 'exit')  txMap[t.dateStr].exit++;
   });
 
-  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Dom
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const today = new Date();
-  const todayStr = today.toLocaleDateString('pt-BR');
+  const todayStr = getTodayBR();
 
   let html = '';
-
-  // Weekday headers
   WEEKDAYS.forEach(d => { html += `<div class="cal-weekday">${d}</div>`; });
 
-  // Empty cells before first day
   for (let i = 0; i < firstDay; i++) {
     html += `<div class="cal-day cal-empty"></div>`;
   }
 
-  // Days
   for (let d = 1; d <= daysInMonth; d++) {
     const dateObj = new Date(calYear, calMonth, d);
     const dateStr = dateObj.toLocaleDateString('pt-BR');
     const isToday    = dateStr === todayStr;
-    const isSelected = dateStr === selectedDate;
+    const isSelected = dateStr === selectedCalDate;
     const info = txMap[dateStr];
 
     let classes = 'cal-day';
@@ -1954,104 +2213,76 @@ function calNextMonth() {
 }
 
 function selectCalDay(dateStr, day) {
-  // Toggle: if already selected, deselect
-  if (selectedDate === dateStr) {
-    selectedDate = null;
-    currentFilter = 'all';
-    ['all','entry','exit','today'].forEach(k =>
-      document.getElementById('filter-'+k).classList.toggle('active', k === 'all'));
-    document.getElementById('day-summary-content').innerHTML =
-      `<div class="day-no-select"><div class="nsi">📅</div><p>Selecione um dia no calendário para ver o resumo.</p></div>`;
-    document.getElementById('history-title').textContent = '📋 Histórico de Lançamentos';
-    renderCalendar();
-    renderHistory();
+  // If already selected, reset to today preset
+  if (selectedCalDate === dateStr) {
+    selectedCalDate = null;
+    setPeriodPreset('today');
+    document.getElementById('day-summary-content').innerHTML = `
+      <div class="day-no-select">
+        <div class="nsi">📅</div>
+        <p>Selecione um dia no calendário para ver o detalhamento.</p>
+      </div>`;
     return;
   }
 
-  selectedDate = dateStr;
-  currentFilter = 'date';
-
-  // Deactivate all filter buttons
-  ['all','entry','exit','today'].forEach(k =>
-    document.getElementById('filter-'+k).classList.remove('active'));
-
-  // Update history title
+  selectedCalDate = dateStr;
   const [dd, mm, yyyy] = dateStr.split('/');
-  const dateObj = new Date(parseInt(yyyy), parseInt(mm)-1, parseInt(dd));
-  const dayName = dateObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-  document.getElementById('history-title').textContent = `📋 Lançamentos — ${dayName}`;
+  const isoDate = `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
 
-  // Day summary
+  // Filter app to this specific date
+  currentPeriod.preset = 'custom';
+  currentPeriod.startDate = isoDate;
+  currentPeriod.endDate = isoDate;
+  currentPeriod.label = `Dia ${dateStr}`;
+
+  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+  document.getElementById('period-start-input').value = isoDate;
+  document.getElementById('period-end-input').value = isoDate;
+  document.getElementById('period-active-label').textContent = currentPeriod.label;
+
+  // Day summary calculation
   const dayTx = transactions.filter(t => t.dateStr === dateStr);
-  const entryTotal = dayTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
-  const exitTotal  = dayTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
+  const entryTotal = dayTx.filter(t => t.type === 'entry').reduce((s,t) => s + (parseFloat(t.value)||0), 0);
+  const exitTotal  = dayTx.filter(t => t.type === 'exit').reduce((s,t)  => s + (parseFloat(t.value)||0), 0);
   const balance    = entryTotal - exitTotal;
   const entryCount = dayTx.filter(t => t.type === 'entry').length;
   const exitCount  = dayTx.filter(t => t.type === 'exit').length;
   const balColor   = balance >= 0 ? 'var(--green)' : 'var(--red)';
 
-  // Check if this date belongs to a closed period
-  const isClosedPeriod = lastClosing && (() => {
-    const [dd, mm, yyyy] = dateStr.split('/');
-    const dayTime = new Date(parseInt(yyyy), parseInt(mm)-1, parseInt(dd), 23, 59, 59).getTime();
-    return dayTime <= new Date(lastClosing.closed_at).getTime();
-  })();
-
-  const closedTag = isClosedPeriod
-    ? `<div class="closed-period-tag">🔒 Período fechado &nbsp;·&nbsp; ✏️ ainda editável</div>`
-    : '';
-
-  if (dayTx.length === 0) {
-    document.getElementById('day-summary-content').innerHTML = `
-      ${closedTag}
-      <div class="day-summary-date">${dayName.split(',')[0] || dateStr}</div>
-      <div class="day-no-select" style="padding: 20px 0">
-        <div class="nsi">📭</div>
-        <p>Nenhum lançamento neste dia.</p>
-      </div>`;
-  } else {
-    document.getElementById('day-summary-content').innerHTML = `
-      ${closedTag}
-      <div class="day-summary-date">${dateStr}</div>
-      <div class="day-summary-rows">
-        <div class="day-summary-row entry-row">
-          <div>
-            <div class="dsr-label">📈 Entradas (${entryCount})</div>
-          </div>
-          <div class="dsr-val" style="color:var(--green)">${fmt(entryTotal)}</div>
-        </div>
-        <div class="day-summary-row exit-row">
-          <div>
-            <div class="dsr-label">📉 Saídas (${exitCount})</div>
-          </div>
-          <div class="dsr-val" style="color:var(--red)">${fmt(exitTotal)}</div>
-        </div>
-        <div class="day-summary-row bal-row">
-          <div>
-            <div class="dsr-label">💰 Saldo do Dia</div>
-          </div>
-          <div class="dsr-val" style="color:${balColor}">${fmt(balance)}</div>
-        </div>
+  document.getElementById('day-summary-content').innerHTML = `
+    <div class="day-summary-date">${dateStr}</div>
+    <div class="day-summary-rows">
+      <div class="day-summary-row entry-row">
+        <span>📈 Entradas (${entryCount})</span>
+        <span style="color:var(--green)">${fmt(entryTotal)}</span>
       </div>
-      <button class="btn-view-day" onclick="scrollToHistory()">
-        📋 Ver ${dayTx.length} lançamento(s)
-      </button>
-      <button class="btn-clear-day" onclick="selectCalDay('${dateStr}', ${day})">
-        ✕ Limpar seleção
-      </button>`;
-  }
+      <div class="day-summary-row exit-row">
+        <span>📉 Saídas (${exitCount})</span>
+        <span style="color:var(--red)">${fmt(exitTotal)}</span>
+      </div>
+      <div class="day-summary-row bal-row">
+        <span>💰 Resultado do Dia</span>
+        <span style="color:${balColor}">${fmt(balance)}</span>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="selectCalDay('${dateStr}', ${day})" style="width:100%;margin-top:6px;">
+      ✕ Limpar Seleção do Dia
+    </button>`;
 
   renderCalendar();
   renderHistory();
-}
-
-function scrollToHistory() {
-  document.getElementById('history-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  renderStats();
 }
 
 /* ===========================
-   MODALS
+   MODALS: ENTRADA & SAÍDA
 =========================== */
+function onEntryItemChange() {
+  const sel = document.getElementById('entry-item').value;
+  const descGroup = document.getElementById('entry-desc-group');
+  descGroup.style.display = (sel === 'Outro') ? 'block' : 'none';
+}
+
 function openModal(type) {
   clearModal(type);
   document.getElementById('modal-'+type).classList.add('open');
@@ -2067,13 +2298,18 @@ function closeModal(type) {
 function clearModal(type) {
   if (type === 'entry') {
     document.getElementById('entry-value').value = '';
+    document.getElementById('entry-client').value = '';
     document.getElementById('entry-desc').value  = '';
     document.getElementById('entry-obs').value   = '';
+    document.getElementById('entry-item').selectedIndex = 0;
     document.getElementById('entry-cat').selectedIndex = 0;
+    document.getElementById('entry-desc-group').style.display = 'none';
     document.getElementById('entry-preview').textContent = 'R$ 0,00';
   } else if (type === 'exit') {
     document.getElementById('exit-value').value  = '';
     document.getElementById('exit-motivo').value = '';
+    document.getElementById('exit-client').value = '';
+    document.getElementById('exit-obs').value    = '';
     document.getElementById('exit-preview').textContent  = 'R$ 0,00';
   }
 }
@@ -2084,26 +2320,53 @@ function updatePreview(type) {
 }
 
 function submitEntry() {
-  const val  = document.getElementById('entry-value').value;
-  const desc = document.getElementById('entry-desc').value;
-  const cat  = document.getElementById('entry-cat').value;
-  const obs  = document.getElementById('entry-obs').value;
-  if (!val || parseFloat(val) <= 0) { showToast('Digite um valor válido.', 'error'); return; }
-  addTransaction('entry', val, desc, cat, obs);
+  const val    = document.getElementById('entry-value').value;
+  const client = document.getElementById('entry-client').value.trim();
+  const item   = document.getElementById('entry-item').value;
+  let desc     = item;
+
+  if (item === 'Outro') {
+    const customDesc = document.getElementById('entry-desc').value.trim();
+    desc = customDesc || 'Outro';
+  }
+
+  const cat = document.getElementById('entry-cat').value;
+  const obs = document.getElementById('entry-obs').value.trim();
+
+  if (!val || parseFloat(val) <= 0) {
+    showToast('Digite um valor válido para a entrada.', 'error');
+    return;
+  }
+  if (!client && !desc) {
+    showToast('Informe o cliente ou o que foi lançado.', 'error');
+    return;
+  }
+
+  addTransaction('entry', val, desc, cat, obs, client);
   closeModal('entry');
 }
 
 function submitExit() {
   const val    = document.getElementById('exit-value').value;
-  const motivo = document.getElementById('exit-motivo').value;
-  if (!val || parseFloat(val) <= 0) { showToast('Digite um valor válido.', 'error'); return; }
-  // For exits: desc = motivo, cat = 'Saída', obs = ''
-  addTransaction('exit', val, motivo || 'Saída', 'Saída', '');
+  const motivo = document.getElementById('exit-motivo').value.trim();
+  const favorecido = document.getElementById('exit-client').value.trim();
+  const obs    = document.getElementById('exit-obs').value.trim();
+
+  if (!val || parseFloat(val) <= 0) {
+    showToast('Digite um valor válido para a saída.', 'error');
+    return;
+  }
+  if (!motivo) {
+    showToast('Informe o motivo da saída.', 'error');
+    return;
+  }
+
+  addTransaction('exit', val, motivo, 'Saída', obs, favorecido);
   closeModal('exit');
 }
 
 /* ===========================
-   EDIT TRANSACTION
+   MODAL: EDITAR LANÇAMENTO
 =========================== */
 function openEditModal(id) {
   const t = transactions.find(tx => String(tx.id) === String(id));
@@ -2111,29 +2374,33 @@ function openEditModal(id) {
 
   document.getElementById('edit-tx-id').value  = t.id;
   document.getElementById('edit-value').value  = t.value;
-  document.getElementById('edit-desc').value   = t.desc;
+  document.getElementById('edit-client').value = t.client || '';
+  document.getElementById('edit-desc').value   = t.desc || '';
   document.getElementById('edit-obs').value    = t.obs || '';
   document.getElementById('edit-preview').textContent = fmt(t.value);
 
   const badge = document.getElementById('edit-badge');
+  const catGroup = document.getElementById('edit-cat-group');
+
   if (t.type === 'entry') {
     badge.textContent = 'Entrada';
     badge.className   = 'modal-badge entry';
-    // Show category, hide motivo
-    document.getElementById('edit-cat-group').style.display    = '';
-    document.getElementById('edit-motivo-group').style.display = 'none';
-    // Pre-select category
+    catGroup.style.display = '';
     const catEl = document.getElementById('edit-cat');
-    const opts  = ['Câmeras','Alarmes','Câmeras e Alarmes','Outras'];
+    const opts  = ['Câmeras','Alarmes','Câmeras e Alarmes','Geral / Outras'];
     const idx   = opts.indexOf(t.cat);
     catEl.selectedIndex = idx >= 0 ? idx : 3;
-  } else {
+  } else if (t.type === 'exit') {
     badge.textContent = 'Saída';
     badge.className   = 'modal-badge exit';
-    // Show motivo, hide category
-    document.getElementById('edit-cat-group').style.display    = 'none';
-    document.getElementById('edit-motivo-group').style.display = '';
-    document.getElementById('edit-motivo').value = t.desc;
+    catGroup.style.display = 'none';
+  } else if (t.type === 'adjustment') {
+    badge.textContent = 'Ajuste';
+    badge.className   = 'modal-badge adjustment';
+    catGroup.style.display = 'none';
+  } else {
+    badge.textContent = 'Registro';
+    badge.className   = 'modal-badge warning';
   }
 
   document.getElementById('modal-edit').classList.add('open');
@@ -2151,61 +2418,37 @@ async function submitEdit() {
   if (idx === -1) { showToast('Lançamento não encontrado.', 'error'); return; }
 
   const val = parseFloat(document.getElementById('edit-value').value);
-  if (!val || val <= 0) { showToast('Digite um valor válido.', 'error'); return; }
+  if (isNaN(val)) { showToast('Digite um valor válido.', 'error'); return; }
 
   const t = { ...transactions[idx] };
-  t.value = val;
-  t.desc  = document.getElementById('edit-desc').value.trim() || t.desc;
-  t.obs   = document.getElementById('edit-obs').value.trim();
+  t.value  = val;
+  t.client = document.getElementById('edit-client').value.trim();
+  t.desc   = document.getElementById('edit-desc').value.trim() || t.desc;
+  t.obs    = document.getElementById('edit-obs').value.trim();
 
   if (t.type === 'entry') {
     t.cat = document.getElementById('edit-cat').value;
-  } else {
-    const motivo = document.getElementById('edit-motivo').value.trim();
-    if (motivo) t.desc = motivo;
-    t.cat = 'Saída';
   }
 
   if (useCloud && supabaseClient) {
     try {
       const dbRow = mapTxToDb(t);
-      const { error } = await supabaseClient
-        .from('transactions')
-        .update(dbRow)
-        .eq('id', String(id));
-
+      const { error } = await supabaseClient.from('transactions').update(dbRow).eq('id', String(id));
       if (error) throw error;
-
-      transactions[idx] = t;
-      renderAll();
-      closeModal('edit');
-      showToast('Lançamento atualizado com sucesso!', 'success');
-      return;
-    } catch (e) {
-      console.error("Erro ao atualizar transação no Supabase, usando local:", e);
-      showToast("Erro na nuvem. Alteração salva localmente.", "error");
+    } catch(e) {
+      console.error("Erro ao atualizar no Supabase:", e);
     }
   }
 
-  // Local fallback
   transactions[idx] = t;
   saveLocalTransactions();
   renderAll();
   closeModal('edit');
-  showToast('Lançamento local atualizado!', 'success');
+  showToast('Lançamento atualizado com sucesso!', 'success');
 }
 
-/* Close modals on overlay click */
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) {
-      overlay.classList.remove('open');
-    }
-  });
-});
-
 /* ===========================
-   DELETE
+   EXCLUIR LANÇAMENTO
 =========================== */
 function requestDelete(id) {
   pendingDeleteId = id;
@@ -2224,165 +2467,538 @@ function confirmDelete() {
 }
 
 /* ===========================
-   FECHAR CAIXA
+   FECHAR CAIXA & CONFERÊNCIA FÍSICA (REQUISITO 3)
 =========================== */
 function openCloseCashModal() {
-  const activeTx = getActiveTx();
-  const totalEntry = activeTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
-  const totalExit  = activeTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
-  const balance    = totalEntry - totalExit;
+  // Find transactions since last closing
+  const closings = transactions.filter(t => t.type === 'closing')
+    .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  const lastCl = closings.length > 0 ? closings[0] : null;
+  const cutoffTime = lastCl ? new Date(lastCl.date).getTime() : 0;
+  const openingBalance = lastCl ? parseFloat(lastCl.value) || 0 : 0;
 
-  document.getElementById('ccs-entry').textContent   = fmt(totalEntry);
-  document.getElementById('ccs-exit').textContent    = fmt(totalExit);
-  document.getElementById('ccs-balance').textContent = fmt(balance);
-  document.getElementById('ccs-balance').style.color = balance >= 0 ? 'var(--green)' : 'var(--red)';
-  document.getElementById('ccs-count').textContent   = activeTx.length;
+  // Active transactions are those after cutoffTime
+  const activeTx = transactions.filter(t => {
+    if (t.type === 'closing' || t.type === 'opening') return false;
+    const tTime = new Date(t.date).getTime();
+    return tTime > cutoffTime;
+  });
 
-  // Sugerir troco = saldo do período se positivo
-  const trocoEl = document.getElementById('troco-value');
-  trocoEl.value = '';
+  const totalEntry = activeTx.filter(t => t.type === 'entry').reduce((s,t) => s + (parseFloat(t.value)||0), 0);
+  const totalExit  = activeTx.filter(t => t.type === 'exit').reduce((s,t)  => s + (parseFloat(t.value)||0), 0);
+  const totalAdj   = activeTx.filter(t => t.type === 'adjustment').reduce((s,t) => s + (parseFloat(t.value)||0), 0);
+
+  const expectedBalance = openingBalance + totalEntry - totalExit + totalAdj;
+
+  // Fill summary
+  document.getElementById('ccs-opening-val').textContent  = fmt(openingBalance);
+  document.getElementById('ccs-entry-val').textContent    = fmt(totalEntry);
+  document.getElementById('ccs-exit-val').textContent     = fmt(totalExit);
+  document.getElementById('ccs-expected-val').textContent = fmt(expectedBalance);
+  document.getElementById('ccs-expected-val-raw').value   = expectedBalance;
+
+  // Reset inputs
+  const physInput = document.getElementById('ccs-physical-input');
+  physInput.value = '';
+  document.getElementById('ccs-adj-reason').value = '';
+  
+  onPhysicalInputChange();
 
   document.getElementById('modal-close-cash').classList.add('open');
-  setTimeout(() => trocoEl.focus(), 200);
+  setTimeout(() => physInput.focus(), 200);
+}
+
+function onPhysicalInputChange() {
+  const expected = parseFloat(document.getElementById('ccs-expected-val-raw').value) || 0;
+  const physRaw = document.getElementById('ccs-physical-input').value;
+  const statusCard = document.getElementById('ccs-diff-status-card');
+  const adjBox = document.getElementById('ccs-adj-box');
+  const adjValInput = document.getElementById('ccs-adj-val');
+  const finalValDisplay = document.getElementById('ccs-final-val');
+
+  if (physRaw === '' || isNaN(parseFloat(physRaw))) {
+    statusCard.className = 'close-diff-card';
+    statusCard.innerHTML = `
+      <div class="close-diff-title">💵 Aguardando contagem física</div>
+      <div class="close-diff-desc">Digite o valor real que está no caixa físico para comparar com o saldo esperado de <strong>${fmt(expected)}</strong>.</div>
+    `;
+    adjBox.style.display = 'none';
+    finalValDisplay.textContent = fmt(expected);
+    return;
+  }
+
+  const physical = parseFloat(physRaw) || 0;
+  const diff = Math.round((physical - expected) * 100) / 100;
+
+  finalValDisplay.textContent = fmt(physical);
+
+  if (Math.abs(diff) < 0.005) {
+    statusCard.className = 'close-diff-card exact';
+    statusCard.innerHTML = `
+      <div class="close-diff-title" style="color:var(--green)">
+        ✅ Caixa Conferido com Sucesso! (Diferença: R$ 0,00)
+      </div>
+      <div class="close-diff-desc">
+        O valor físico bate 100% com o saldo esperado no sistema. Nenhum ajuste é necessário.
+      </div>
+    `;
+    adjBox.style.display = 'none';
+    adjValInput.value = '0,00';
+  } else {
+    const isSobra = diff > 0;
+    const diffColor = isSobra ? 'var(--yellow)' : 'var(--red)';
+    const diffLabel = isSobra ? `⚠️ Sobra no Caixa: +${fmt(diff)}` : `⚠️ Falta no Caixa: -${fmt(Math.abs(diff))}`;
+
+    statusCard.className = 'close-diff-card diff-alert';
+    statusCard.innerHTML = `
+      <div class="close-diff-title" style="color:${diffColor}">
+        ${diffLabel}
+      </div>
+      <div class="close-diff-desc">
+        Saldo esperado: <strong>${fmt(expected)}</strong> &bull; Físico contado: <strong>${fmt(physical)}</strong>.<br>
+        O sistema registrará um ajuste de <strong>${fmt(diff)}</strong> para que o caixa feche com o valor real de <strong>${fmt(physical)}</strong>.
+      </div>
+    `;
+    adjBox.style.display = 'block';
+    adjValInput.value = (diff >= 0 ? '+' : '') + fmt(diff);
+  }
 }
 
 async function confirmCloseCash() {
-  const activeTx = getActiveTx();
-  const totalEntry = activeTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
-  const totalExit  = activeTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
-  const balance    = totalEntry - totalExit;
-  const now        = new Date().toISOString();
+  const expected = parseFloat(document.getElementById('ccs-expected-val-raw').value) || 0;
+  const physRaw = document.getElementById('ccs-physical-input').value;
 
-  const closingRecord = {
-    closed_at:   now,
-    closed_by:   currentUser,
-    entry_total: totalEntry,
-    exit_total:  totalExit,
-    balance:     balance,
-    tx_count:    activeTx.length
-  };
+  if (physRaw === '' || isNaN(parseFloat(physRaw))) {
+    showToast('Informe o valor contado no caixa físico.', 'error');
+    document.getElementById('ccs-physical-input').focus();
+    return;
+  }
+
+  const physical = parseFloat(physRaw) || 0;
+  const diff = Math.round((physical - expected) * 100) / 100;
+  const needsAdjustment = Math.abs(diff) >= 0.005;
+  const adjReason = document.getElementById('ccs-adj-reason').value.trim();
+
+  if (needsAdjustment && !adjReason) {
+    showToast('Informe o motivo do ajuste antes de fechar o caixa.', 'error');
+    document.getElementById('ccs-adj-reason').focus();
+    return;
+  }
 
   const btn = document.getElementById('btn-confirm-close-cash');
   btn.disabled = true;
-  btn.textContent = '⏳ Fechando...';
+  btn.textContent = '⏳ Registrando Fechamento...';
 
-  if (useCloud && supabaseClient) {
-    try {
-      const { data, error } = await supabaseClient
-        .from('cash_closings')
-        .insert([closingRecord])
-        .select()
-        .single();
-      if (error) throw error;
-      lastClosing = data;
-      localStorage.setItem('caixavigi_last_closing', JSON.stringify(lastClosing));
-    } catch(e) {
-      console.error('Erro ao registrar fechamento no Supabase, salvando local:', e);
-      closingRecord.id = 'local-' + Date.now();
-      lastClosing = closingRecord;
-      localStorage.setItem('caixavigi_last_closing', JSON.stringify(lastClosing));
-      showToast('Fechamento salvo localmente (erro na nuvem).', 'error');
-    }
-  } else {
-    closingRecord.id = 'local-' + Date.now();
-    lastClosing = closingRecord;
-    localStorage.setItem('caixavigi_last_closing', JSON.stringify(lastClosing));
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('pt-BR');
+  const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  // 1. Se houve ajuste, registrar transação de ajuste
+  if (needsAdjustment) {
+    const adjTx = {
+      id: String(Date.now() + Math.random()),
+      type: 'adjustment',
+      value: diff,
+      desc: 'Ajuste de Conferência de Caixa',
+      client: 'Ajuste de Caixa',
+      cat: 'Ajuste',
+      obs: `Motivo: ${adjReason} (Esperado: ${fmt(expected)} | Físico: ${fmt(physical)})`,
+      user: currentUser,
+      date: now.toISOString(),
+      dateStr: dateStr,
+      timeStr: timeStr
+    };
+    await insertTxRecord(adjTx);
   }
+
+  // 2. Registrar fechamento de caixa
+  const closingTx = {
+    id: String(Date.now() + Math.random() + 0.1),
+    type: 'closing',
+    value: physical,
+    desc: 'Fechamento de Caixa',
+    client: '',
+    cat: 'Fechamento',
+    obs: `Saldo Esperado: ${fmt(expected)} | Caixa Físico: ${fmt(physical)} | Ajuste: ${fmt(diff)} | ${adjReason ? 'Motivo: ' + adjReason : 'Sem divergência'}`,
+    user: currentUser,
+    date: new Date(now.getTime() + 100).toISOString(),
+    dateStr: dateStr,
+    timeStr: timeStr
+  };
+  await insertTxRecord(closingTx);
+
+  // 3. Iniciar próximo ciclo com o valor físico fechado
+  const openingTx = {
+    id: String(Date.now() + Math.random() + 0.2),
+    type: 'opening',
+    value: physical,
+    desc: 'Início de Caixa (Transportado)',
+    client: '',
+    cat: 'Abertura',
+    obs: `Saldo transportado do fechamento anterior realizado por ${currentUser}`,
+    user: currentUser,
+    date: new Date(now.getTime() + 200).toISOString(),
+    dateStr: dateStr,
+    timeStr: timeStr
+  };
+  await insertTxRecord(openingTx);
+
+  lastClosing = closingTx;
+  localStorage.setItem('caixavigi_last_closing', JSON.stringify(lastClosing));
 
   btn.disabled = false;
-  btn.innerHTML = '🔒 Confirmar Fechamento';
-
+  btn.textContent = '🔒 Confirmar Fechamento';
   closeModal('close-cash');
-  renderAll();
-  updateClosingBanner();
 
-  // Se informou troco, lançar automaticamente como entrada do novo período
-  const trocoVal = parseFloat(document.getElementById('troco-value').value);
-  if (trocoVal > 0) {
-    setTimeout(() => {
-      addTransaction('entry', trocoVal, 'Troco do caixa anterior', 'Outras', 'Abertura do novo período');
-    }, 300); // pequeno delay para garantir que lastClosing já foi salvo
-    showToast(`Caixa fechado! Troco de ${fmt(trocoVal)} lançado como entrada. 🎉`, 'success');
-  } else {
-    showToast('Caixa fechado com sucesso! Novo período iniciado zerado. 🎉', 'success');
-  }
+  await loadTransactions();
+  showToast(`Caixa fechado com sucesso com saldo de ${fmt(physical)}! 🎉`, 'success');
 }
 
 /* ===========================
-   REPORT
+   RELATÓRIO PARA CONFERÊNCIA COM O FLY (REQUISITO 4 & 5)
 =========================== */
-function openReport() {
-  const today = getToday();
-  const all   = transactions;
-  const todayTx = all.filter(t => t.dateStr === today);
+let reportPeriod = {
+  startISO: null,
+  endISO: null,
+  label: ''
+};
 
-  const totalEntry = all.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
-  const totalExit  = all.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
-  const balance    = totalEntry - totalExit;
-
-  const todayEntry = todayTx.filter(t => t.type === 'entry').reduce((s,t) => s + t.value, 0);
-  const todayExit  = todayTx.filter(t => t.type === 'exit').reduce((s,t)  => s + t.value, 0);
-
-  const hr = '─'.repeat(46);
-  let lines = [];
-  lines.push('╔══════════════════════════════════════════════╗');
-  lines.push('║           RELATÓRIO DE CAIXA - VIGI          ║');
-  lines.push('╚══════════════════════════════════════════════╝');
-  lines.push('');
-  lines.push(`  Gerado em: ${new Date().toLocaleString('pt-BR')}`);
-  lines.push(`  Usuária:   ${currentUser}`);
-  lines.push('');
-  lines.push(hr);
-  lines.push('  RESUMO GERAL');
-  lines.push(hr);
-  lines.push(`  Total de Entradas : ${fmt(totalEntry).padStart(14)}`);
-  lines.push(`  Total de Saídas   : ${fmt(totalExit).padStart(14)}`);
-  lines.push(`  Saldo Atual       : ${fmt(balance).padStart(14)}`);
-  lines.push('');
-  lines.push(hr);
-  lines.push(`  RESUMO DE HOJE (${today})`);
-  lines.push(hr);
-  lines.push(`  Entradas Hoje : ${fmt(todayEntry).padStart(16)}`);
-  lines.push(`  Saídas Hoje   : ${fmt(todayExit).padStart(16)}`);
-  lines.push(`  Resultado     : ${fmt(todayEntry - todayExit).padStart(16)}`);
-  lines.push('');
-  lines.push(hr);
-  lines.push('  ÚLTIMOS 20 LANÇAMENTOS');
-  lines.push(hr);
-
-  const recent = all.slice(0, 20);
-  if (recent.length === 0) {
-    lines.push('  Nenhum lançamento registrado.');
+function refreshReportPeriod(mode) {
+  if (mode === 'current') {
+    reportPeriod.startISO = currentPeriod.startDate;
+    reportPeriod.endISO   = currentPeriod.endDate;
+    reportPeriod.label    = currentPeriod.label;
   } else {
-    recent.forEach(t => {
-      const sinal = t.type === 'entry' ? '+ ' : '- ';
-      const val   = fmt(t.value).padStart(12);
-      const data  = `${t.dateStr} ${t.timeStr}`;
-      lines.push(`  ${sinal}${val}  ${data}  ${t.desc.substring(0,22).padEnd(22)}  [${t.user}]`);
-    });
+    const dates = getPresetDates(mode);
+    reportPeriod.startISO = dates.start;
+    reportPeriod.endISO   = dates.end;
+    reportPeriod.label    = dates.label;
   }
+  buildReportHTML();
+}
 
-  lines.push('');
-  lines.push(hr);
-  lines.push('  Caixa VIGI — Sistema de Controle Financeiro');
+function getPresetDates(preset) {
+  const now = new Date();
+  const todayISO = toLocalISO(now);
 
-  document.getElementById('report-content').textContent = lines.join('\n');
+  if (preset === 'today') {
+    return { start: todayISO, end: todayISO, label: `Hoje (${formatDateBR(todayISO)})` };
+  }
+  if (preset === 'yesterday') {
+    const yest = new Date(now);
+    yest.setDate(now.getDate() - 1);
+    const yestISO = toLocalISO(yest);
+    return { start: yestISO, end: yestISO, label: `Ontem (${formatDateBR(yestISO)})` };
+  }
+  if (preset === '7days') {
+    const d7 = new Date(now);
+    d7.setDate(now.getDate() - 6);
+    const d7ISO = toLocalISO(d7);
+    return { start: d7ISO, end: todayISO, label: `Últimos 7 dias (${formatDateBR(d7ISO)} a ${formatDateBR(todayISO)})` };
+  }
+  if (preset === '15days') {
+    const d15 = new Date(now);
+    d15.setDate(now.getDate() - 14);
+    const d15ISO = toLocalISO(d15);
+    return { start: d15ISO, end: todayISO, label: `Últimos 15 dias (${formatDateBR(d15ISO)} a ${formatDateBR(todayISO)})` };
+  }
+  if (preset === 'thisMonth') {
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { start: toLocalISO(first), end: toLocalISO(last), label: `Este Mês (${MONTHS[now.getMonth()]} ${now.getFullYear()})` };
+  }
+  if (preset === 'all') {
+    return { start: null, end: null, label: 'Todo o Histórico' };
+  }
+  return { start: todayISO, end: todayISO, label: `Hoje (${formatDateBR(todayISO)})` };
+}
+
+function openReport() {
+  reportPeriod.startISO = currentPeriod.startDate;
+  reportPeriod.endISO   = currentPeriod.endDate;
+  reportPeriod.label    = currentPeriod.label;
+
+  buildReportHTML();
   document.getElementById('modal-report').classList.add('open');
 }
 
+function buildReportHTML() {
+  const container = document.getElementById('report-modal-body');
+  const indEl     = document.getElementById('rep-period-indicator');
+  if (indEl) indEl.textContent = `Período: ${reportPeriod.label}`;
+
+  const metrics = calculatePeriodMetrics(reportPeriod.startISO, reportPeriod.endISO);
+
+  // Transactions inside this report period
+  const inPeriodTx = transactions.filter(t => {
+    if (!reportPeriod.startISO || !reportPeriod.endISO) return true;
+    const tISO = getTxDateISO(t);
+    return tISO >= reportPeriod.startISO && tISO <= reportPeriod.endISO;
+  }).sort((a,b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+
+  // Filter adjustments
+  const adjustments = inPeriodTx.filter(t => t.type === 'adjustment');
+
+  // Filter closings
+  const closings = inPeriodTx.filter(t => t.type === 'closing');
+
+  let html = `
+    <!-- CABEÇALHO DO RELATÓRIO -->
+    <div class="rep-header-box">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <img src="vigi.png" alt="VIGI" style="height:44px;" />
+        <div>
+          <div style="font-size:1.15rem;font-weight:800;letter-spacing:-0.3px;">RELATÓRIO DE CONFERÊNCIA DE CAIXA</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">Auditoria Financeira &bull; Cruzamento com Sistema Fly</div>
+        </div>
+      </div>
+      <div style="text-align:right;font-size:0.75rem;color:var(--text-muted);line-height:1.5;">
+        <div><strong>Emissão:</strong> ${new Date().toLocaleString('pt-BR')}</div>
+        <div><strong>Operador(a):</strong> ${currentUser || 'Sistema'}</div>
+      </div>
+    </div>
+
+    <!-- QUADRO RESUMO DO PERÍODO -->
+    <div class="rep-summary-grid">
+      <div class="rep-summary-card">
+        <div class="rep-summary-label">Saldo Inicial</div>
+        <div class="rep-summary-val" style="color:var(--primary2)">${fmt(metrics.initialBalance)}</div>
+      </div>
+      <div class="rep-summary-card">
+        <div class="rep-summary-label">Total Entradas (+)</div>
+        <div class="rep-summary-val" style="color:var(--green)">+${fmt(metrics.entriesSum)}</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);">${metrics.entriesCount} rec.</div>
+      </div>
+      <div class="rep-summary-card">
+        <div class="rep-summary-label">Total Saídas (-)</div>
+        <div class="rep-summary-val" style="color:var(--red)">-${fmt(metrics.exitsSum)}</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);">${metrics.exitsCount} desp.</div>
+      </div>
+      <div class="rep-summary-card">
+        <div class="rep-summary-label">Ajustes Realizados</div>
+        <div class="rep-summary-val" style="color:var(--yellow)">${metrics.adjustmentsSum >= 0 ? '+' : ''}${fmt(metrics.adjustmentsSum)}</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);">${metrics.adjustmentsCount} ajuste(s)</div>
+      </div>
+      <div class="rep-summary-card" style="border-color:rgba(124,92,252,0.4);">
+        <div class="rep-summary-label">Saldo Final</div>
+        <div class="rep-summary-val" style="color:${metrics.finalBalance >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(metrics.finalBalance)}</div>
+      </div>
+    </div>`;
+
+  // PAINEL DE AUDITORIA DE AJUSTES (DESTAQUE PARA CONFERÊNCIA FLY)
+  if (adjustments.length > 0) {
+    html += `
+      <div class="rep-audit-box">
+        <div class="rep-audit-title">
+          <span>⚠️</span> Painel de Auditoria de Ajustes no Caixa (${adjustments.length} registro(s))
+        </div>
+        <div class="rep-audit-desc">
+          Compare os motivos e valores abaixo com os lançamentos do sistema <strong>Fly</strong> para identificar recebimentos esquecidos ou divergências de mensalidades:
+        </div>
+        <div class="rep-table-wrapper" style="margin-top:8px;">
+          <table class="rep-table">
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Valor do Ajuste</th>
+                <th>Motivo Declarado</th>
+                <th>Responsável</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${adjustments.map(a => `
+                <tr>
+                  <td>${a.dateStr} ${a.timeStr}</td>
+                  <td style="font-weight:700;color:var(--yellow)">${a.value >= 0 ? '+' : ''}${fmt(a.value)}</td>
+                  <td>${escHtml(a.obs || a.desc)}</td>
+                  <td><strong>${escHtml(a.user)}</strong></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  } else {
+    html += `
+      <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.25);border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:0.8rem;color:#4ade80;display:flex;align-items:center;gap:8px;">
+        <span>✅</span> Nenhum ajuste de caixa foi registrado neste período. O caixa operou sem divergências físicas.
+      </div>`;
+  }
+
+  // TABELA COMPLETA DE LANÇAMENTOS DO PERÍODO
+  html += `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;">
+      <div style="font-size:0.92rem;font-weight:700;">📋 Todos os Lançamentos do Período (${inPeriodTx.length})</div>
+      <div style="font-size:0.75rem;color:var(--text-muted);">Use a coluna Cliente/Pessoa para cruzar com o Fly</div>
+    </div>
+    <div class="rep-table-wrapper">
+      <table class="rep-table">
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Tipo</th>
+            <th>Cliente / Pessoa Relacionada</th>
+            <th>O que foi lançado</th>
+            <th>Categoria</th>
+            <th style="text-align:right">Valor</th>
+            <th>Resp.</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${inPeriodTx.map(t => {
+            let tipoLabel = '';
+            let valColor = '';
+            let valPrefix = '';
+            if (t.type === 'entry')      { tipoLabel = '<span style="color:var(--green)">📈 Entrada</span>'; valColor = 'var(--green)'; valPrefix = '+'; }
+            else if (t.type === 'exit')  { tipoLabel = '<span style="color:var(--red)">📉 Saída</span>'; valColor = 'var(--red)'; valPrefix = '-'; }
+            else if (t.type === 'adjustment') { tipoLabel = '<span style="color:var(--yellow)">⚖️ Ajuste</span>'; valColor = 'var(--yellow)'; valPrefix = (t.value>=0?'+':''); }
+            else if (t.type === 'closing')    { tipoLabel = '<span style="color:#f59e0b">🔒 Fechamento</span>'; valColor = '#f59e0b'; }
+            else if (t.type === 'opening')    { tipoLabel = '<span style="color:#38bdf8">🟢 Início</span>'; valColor = '#38bdf8'; }
+
+            return `
+              <tr>
+                <td style="white-space:nowrap">${t.dateStr} <span style="color:var(--text-muted);font-size:0.72rem">${t.timeStr}</span></td>
+                <td>${tipoLabel}</td>
+                <td><strong>${escHtml(t.client || '—')}</strong></td>
+                <td>${escHtml(t.desc)}</td>
+                <td><span style="font-size:0.72rem;color:var(--text-muted)">${escHtml(t.cat)}</span></td>
+                <td style="text-align:right;font-weight:700;color:${valColor};white-space:nowrap">${valPrefix}${fmt(t.value)}</td>
+                <td><strong>${escHtml(t.user)}</strong></td>
+                <td style="font-size:0.74rem;color:var(--text-muted);max-width:220px;">${escHtml(t.obs || '')}</td>
+              </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  // SEQUÊNCIA DE FECHAMENTOS NO PERÍODO
+  if (closings.length > 0) {
+    html += `
+      <div style="font-size:0.92rem;font-weight:700;margin-top:16px;margin-bottom:8px;">
+        🔒 Fechamentos Realizados no Período (${closings.length})
+      </div>
+      <div class="rep-table-wrapper">
+        <table class="rep-table">
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Saldo Fechado</th>
+              <th>Detalhes / Auditoria</th>
+              <th>Responsável</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${closings.map(c => `
+              <tr>
+                <td>${c.dateStr} ${c.timeStr}</td>
+                <td style="font-weight:800;color:#f59e0b">${fmt(c.value)}</td>
+                <td style="font-size:0.74rem;color:var(--text-muted)">${escHtml(c.obs)}</td>
+                <td><strong>${escHtml(c.user)}</strong></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
 function printReport() {
-  const content = document.getElementById('report-content').textContent;
-  const win = window.open('', '_blank', 'width=700,height=600');
-  win.document.write(`<pre style="font-family:monospace;padding:30px;font-size:13px;background:#fff;color:#111;">${content}</pre>`);
+  const content = document.getElementById('report-modal-body').innerHTML;
+  const win = window.open('', '_blank', 'width=900,height=750');
+  win.document.write(`
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="utf-8">
+      <title>Relatório de Caixa VIGI — Conferência</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #111; padding: 25px; line-height: 1.4; font-size: 12px; }
+        .rep-header-box { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #222; padding-bottom: 12px; margin-bottom: 16px; }
+        .rep-summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 18px; }
+        .rep-summary-card { border: 1px solid #ccc; border-radius: 6px; padding: 10px; text-align: center; }
+        .rep-summary-label { font-size: 10px; text-transform: uppercase; color: #555; font-weight: bold; }
+        .rep-summary-val { font-size: 15px; font-weight: bold; margin-top: 4px; }
+        .rep-audit-box { border: 2px solid #f59e0b; background: #fffbeb; border-radius: 6px; padding: 12px; margin-bottom: 16px; }
+        .rep-audit-title { font-weight: bold; color: #b45309; margin-bottom: 6px; }
+        .rep-table-wrapper { margin-top: 10px; margin-bottom: 20px; }
+        .rep-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .rep-table th, .rep-table td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+        .rep-table th { background: #f2f2f2; text-transform: uppercase; font-size: 10px; font-weight: bold; }
+        .rep-table tr:nth-child(even) { background: #fafafa; }
+        @media print {
+          body { padding: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      ${content}
+    </body>
+    </html>
+  `);
   win.document.close();
-  win.print();
+  setTimeout(() => win.print(), 350);
+}
+
+function exportReportCSV() {
+  const inPeriodTx = transactions.filter(t => {
+    if (!reportPeriod.startISO || !reportPeriod.endISO) return true;
+    const tISO = getTxDateISO(t);
+    return tISO >= reportPeriod.startISO && tISO <= reportPeriod.endISO;
+  }).sort((a,b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+
+  if (inPeriodTx.length === 0) {
+    showToast('Nenhum lançamento no período para exportar.', 'error');
+    return;
+  }
+
+  const headers = ['Data', 'Hora', 'Tipo', 'Cliente_Pessoa', 'Descricao_Item', 'Categoria', 'Valor_BRL', 'Responsavel', 'Observacao_Motivo'];
+  const rows = [headers.join(';')];
+
+  inPeriodTx.forEach(t => {
+    let tipo = 'Outro';
+    if (t.type === 'entry') tipo = 'Entrada';
+    else if (t.type === 'exit') tipo = 'Saida';
+    else if (t.type === 'adjustment') tipo = 'Ajuste';
+    else if (t.type === 'closing') tipo = 'Fechamento';
+    else if (t.type === 'opening') tipo = 'Abertura';
+
+    const row = [
+      `"${t.dateStr || ''}"`,
+      `"${t.timeStr || ''}"`,
+      `"${tipo}"`,
+      `"${(t.client || '').replace(/"/g, '""')}"`,
+      `"${(t.desc || '').replace(/"/g, '""')}"`,
+      `"${(t.cat || '').replace(/"/g, '""')}"`,
+      `"${(parseFloat(t.value)||0).toFixed(2).replace('.', ',')}"`,
+      `"${(t.user || '').replace(/"/g, '""')}"`,
+      `"${(t.obs || '').replace(/"/g, '""')}"`
+    ];
+    rows.push(row.join(';'));
+  });
+
+  const csvContent = '\uFEFF' + rows.join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  const fileName = `caixa_vigi_conferencia_${reportPeriod.startISO || 'inicio'}_a_${reportPeriod.endISO || 'fim'}.csv`;
+  link.setAttribute('download', fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('Planilha Excel exportada com sucesso!', 'success');
 }
 
 /* ===========================
-   TOAST
+   TOAST & UTILS
 =========================== */
 function showToast(msg, type = 'success') {
   const container = document.getElementById('toast-container');
+  if (!container) return;
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.innerHTML = `<span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span><span>${msg}</span>`;
@@ -2391,27 +3007,32 @@ function showToast(msg, type = 'success') {
   setTimeout(() => toast.remove(), 3200);
 }
 
-/* ===========================
-   UTILS
-=========================== */
 function fmt(val) {
-  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  return (parseFloat(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function escHtml(str) {
-  return String(str)
+  return String(str || '')
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;');
 }
 
-/* Close on Escape */
+/* Close on Escape and Overlay Click */
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal-overlay.open, .confirm-overlay.open')
       .forEach(m => m.classList.remove('open'));
   }
+});
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.classList.remove('open');
+    }
+  });
 });
 </script>
 </body>

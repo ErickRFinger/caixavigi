@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════╗
 ║         CAIXA VIGI — Sistema de Controle         ║
-║              Financeiro (v1.0)                   ║
+║         Financeiro & Conferência (v2.0)          ║
 ╚══════════════════════════════════════════════════╝
 
 🚀 COMO USAR
@@ -14,18 +14,40 @@
 
 4. Pronto! Você está no sistema.
 
-📊 FUNCIONALIDADES
+📊 PRINCIPAIS FUNCIONALIDADES (ATUALIZADAS)
 ─────────────────────────────────────────────────
-✅ Login com seleção de usuária
-✅ Dashboard com saldo em tempo real
-✅ Botão "Lançar Entrada" — registra receitas
-✅ Botão "Lançar Saída"  — registra despesas
-✅ Histórico completo de lançamentos
-✅ Filtros: Todos / Entradas / Saídas / Hoje
-✅ Relatório com resumo financeiro
-✅ Impressão do relatório
-✅ Excluir lançamentos (com confirmação)
-✅ Dados salvos automaticamente no navegador
+✅ Filtro de Período Flexível:
+   - Consulte qualquer intervalo: Hoje, Ontem, 7 Dias,
+     15 Dias, Este Mês, Mês Anterior ou qualquer data
+     inicial e final personalizada.
+
+✅ Conferência & Fechamento de Caixa:
+   - No fechamento, você informa o VALOR FÍSICO real
+     contado na gaveta.
+   - O sistema compara com o saldo esperado e calcula
+     divergências (sobra ou falta).
+   - Permite registrar AJUSTES/REAJUSTES com o MOTIVO
+     obrigatório para auditoria.
+   - O saldo final fecha com o valor físico e inicia
+     o próximo período automaticamente.
+
+✅ Sequência Contínua do Caixa:
+   - Visualização transparente de cada ciclo:
+     Início (saldo transportado) ➔ Movimentações do
+     período ➔ Fechamento com conferência ➔ Novo Início.
+
+✅ Detalhamento Completo dos Lançamentos:
+   - Registra: Data, Hora, Valor, O que foi lançado
+     (Mensalidade, Material, Instalação, etc.),
+     Cliente/Pessoa Relacionada e Responsável.
+
+✅ Relatório para Conferência com o Fly:
+   - Painel exclusivo com todos os lançamentos do
+     período para cruzar nomes de clientes com o Fly.
+   - Quadro de Auditoria de Ajustes para identificar
+     recebimentos esquecidos.
+   - Impressão formatada em folha A4 / Salvar em PDF.
+   - Exportação direta para planilha Excel (CSV).
 
 👩 USUÁRIAS
 ─────────────────────────────────────────────────
@@ -33,15 +55,12 @@
   Camili  →  Senha: clic3369
   Keithi  →  Senha: clic3369
 
-💾 DADOS
+💾 DADOS & SINCRONIZAÇÃO
 ─────────────────────────────────────────────────
-Os dados são armazenados localmente no seu
-navegador (localStorage). Não se perde ao
-fechar a janela, mas é específico do navegador.
-
-⚠️  IMPORTANTE: Se limpar os dados do navegador,
-os lançamentos serão apagados. Exporte/imprima
-relatórios regularmente para manter registro!
+Os dados sincronizam automaticamente na nuvem
+(Supabase) para que todas as máquinas vejam as
+mesmas informações. Também conta com modo offline
+automático no navegador (localStorage).
 
 ─────────────────────────────────────────────────
 Desenvolvido especialmente para o time VIGI 💜
