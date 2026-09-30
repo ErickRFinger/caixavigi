@@ -947,14 +947,14 @@
 
     <!-- 2. CARDS DO PERÍODO -->
     <div class="cards-grid">
-      <!-- Card 1: Saldo do Período -->
+      <!-- Card 1: Caixa Total Físico (Total em Mãos) -->
       <div class="card card-balance">
         <div class="card-header-row">
           <div class="card-icon purple">💰</div>
-          <span class="card-period" id="card-balance-period">Saldo do Período</span>
+          <span class="card-period" id="card-balance-period">Caixa Total</span>
         </div>
-        <div class="card-label">Saldo do Período</div>
-        <div class="card-value green" id="card-balance">R$ 0,00</div>
+        <div class="card-label" id="card-balance-label">Total em Caixa</div>
+        <div class="card-value purple" id="card-balance">R$ 0,00</div>
         <div class="card-sub" id="card-balance-sub">Carregando saldo...</div>
       </div>
 
@@ -962,9 +962,9 @@
       <div class="card card-entry">
         <div class="card-header-row">
           <div class="card-icon green">📈</div>
-          <span class="card-period">Receitas</span>
+          <span class="card-period" id="card-entries-period">Receitas</span>
         </div>
-        <div class="card-label">Total de Entradas</div>
+        <div class="card-label" id="card-entries-label">Total de Entradas</div>
         <div class="card-value green" id="card-entries">R$ 0,00</div>
         <div class="card-sub" id="card-entries-sub">0 lançamentos</div>
       </div>
@@ -973,22 +973,22 @@
       <div class="card card-exit">
         <div class="card-header-row">
           <div class="card-icon red">📉</div>
-          <span class="card-period">Despesas</span>
+          <span class="card-period" id="card-exits-period">Despesas</span>
         </div>
-        <div class="card-label">Total de Saídas</div>
+        <div class="card-label" id="card-exits-label">Total de Saídas</div>
         <div class="card-value red" id="card-exits">R$ 0,00</div>
         <div class="card-sub" id="card-exits-sub">0 lançamentos</div>
       </div>
 
-      <!-- Card 4: Ajustes no Período -->
+      <!-- Card 4: Resultado Líquido do Dia / Período -->
       <div class="card card-adj">
         <div class="card-header-row">
-          <div class="card-icon yellow">⚖️</div>
-          <span class="card-period">Auditoria / Fly</span>
+          <div class="card-icon blue" id="card-result-icon" style="background:rgba(59,130,246,0.2);">⚡</div>
+          <span class="card-period" id="card-result-period">Movimento de Hoje</span>
         </div>
-        <div class="card-label">Ajustes de Caixa</div>
-        <div class="card-value yellow" id="card-adjustments">0 ajustes</div>
-        <div class="card-sub" id="card-adjustments-sub">Sem ajustes registrados</div>
+        <div class="card-label" id="card-result-label">Resultado do Dia</div>
+        <div class="card-value green" id="card-adjustments">+R$ 0,00</div>
+        <div class="card-sub" id="card-adjustments-sub">Entradas - Saídas hoje</div>
       </div>
     </div>
 
@@ -1891,9 +1891,50 @@ async function deleteTransaction(id) {
 }
 
 /* ===========================
-   CÁLCULO DE MÉTRICAS DO PERÍODO
+   CÁLCULO DE MÉTRICAS DO PERÍODO & CICLO ATIVO
 =========================== */
+function isOpeningTx(t) {
+  if (t.type === 'opening') return true;
+  const desc = (t.desc || '').toLowerCase();
+  const obs = (t.obs || '').toLowerCase();
+  return desc.includes('troco do caixa anterior') || obs.includes('abertura do novo período');
+}
+
+function getActiveCycleTransactions() {
+  const sorted = [...transactions].sort((a, b) => {
+    return new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime();
+  });
+
+  if (sorted.length === 0) return [];
+
+  // Busca do mais recente para o mais antigo o ponto inicial do ciclo ativo
+  let startIdx = 0;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const t = sorted[i];
+    if (t.type === 'opening') {
+      startIdx = i;
+      break;
+    }
+    if (t.type === 'closing') {
+      if (i + 1 < sorted.length && sorted[i+1].type === 'opening') {
+        startIdx = i + 1;
+      } else {
+        startIdx = i;
+      }
+      break;
+    }
+    if (isOpeningTx(t)) {
+      startIdx = i;
+      break;
+    }
+  }
+
+  return sorted.slice(startIdx);
+}
+
 function calculatePeriodMetrics(startISO, endISO) {
+  const cycleTx = getActiveCycleTransactions();
+
   let initialBalance = 0;
   let entriesSum = 0;
   let entriesCount = 0;
@@ -1903,39 +1944,43 @@ function calculatePeriodMetrics(startISO, endISO) {
   let adjustmentsCount = 0;
   let closingsCount = 0;
 
-  // Chronological sort ascending for calculation
-  const sorted = [...transactions].sort((a, b) => {
-    return new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime();
-  });
-
-  sorted.forEach(t => {
+  cycleTx.forEach(t => {
     const tISO = getTxDateISO(t);
     const val = parseFloat(t.value) || 0;
+    const ttype = t.type;
+
+    // Se é lançamento de abertura/troco inicial do ciclo
+    if (isOpeningTx(t)) {
+      if (!startISO || tISO <= (endISO || '9999-99-99')) {
+        initialBalance += val;
+      }
+      return;
+    }
 
     if (startISO && tISO < startISO) {
-      // Prior transactions contribute to initial balance of this period
-      if (t.type === 'entry') initialBalance += val;
-      else if (t.type === 'exit') initialBalance -= val;
-      else if (t.type === 'adjustment') initialBalance += val;
+      // Movimentações anteriores dentro do ciclo ativo compõem o saldo inicial do período
+      if (ttype === 'entry') initialBalance += val;
+      else if (ttype === 'exit') initialBalance -= val;
+      else if (ttype === 'adjustment') initialBalance += val;
     } else if (!startISO || (tISO >= startISO && (!endISO || tISO <= endISO))) {
-      // Transactions inside the period
-      if (t.type === 'entry') {
+      // Movimentações dentro do período consultado
+      if (ttype === 'entry') {
         entriesSum += val;
         entriesCount++;
-      } else if (t.type === 'exit') {
+      } else if (ttype === 'exit') {
         exitsSum += val;
         exitsCount++;
-      } else if (t.type === 'adjustment') {
+      } else if (ttype === 'adjustment') {
         adjustmentsSum += val;
         adjustmentsCount++;
-      } else if (t.type === 'closing') {
+      } else if (ttype === 'closing') {
         closingsCount++;
       }
     }
   });
 
-  const finalBalance = initialBalance + entriesSum - exitsSum + adjustmentsSum;
   const periodResult = entriesSum - exitsSum + adjustmentsSum;
+  const finalBalance = initialBalance + periodResult;
 
   return {
     initialBalance,
@@ -1957,45 +2002,75 @@ function calculatePeriodMetrics(startISO, endISO) {
 function renderStats() {
   const metrics = calculatePeriodMetrics(currentPeriod.startDate, currentPeriod.endDate);
 
-  // Card 1: Saldo do Período
+  // Card 1: Caixa Total Físico (Total em Mãos)
   const balEl = document.getElementById('card-balance');
   const balPeriodEl = document.getElementById('card-balance-period');
   const balSubEl = document.getElementById('card-balance-sub');
+  const balLabelEl = document.getElementById('card-balance-label');
 
-  if (currentPeriod.preset === 'all') {
+  if (balEl) {
     balEl.textContent = fmt(metrics.finalBalance);
     balEl.className = 'card-value ' + (metrics.finalBalance >= 0 ? 'purple' : 'red');
-    if (balPeriodEl) balPeriodEl.textContent = 'Histórico Geral';
-    if (balSubEl) balSubEl.innerHTML = `Total acumulado de todas as transações`;
-  } else {
-    balEl.textContent = fmt(metrics.periodResult);
-    balEl.className = 'card-value ' + (metrics.periodResult >= 0 ? 'green' : 'red');
-    if (balPeriodEl) {
-      balPeriodEl.textContent = currentPeriod.preset === 'today' ? 'Saldo de Hoje' : 'Saldo do Período';
-    }
-    if (balSubEl) {
-      balSubEl.innerHTML = `Entradas: <strong>+${fmt(metrics.entriesSum)}</strong> &bull; Saídas: <strong>-${fmt(metrics.exitsSum)}</strong>`;
+  }
+  if (balPeriodEl) balPeriodEl.textContent = 'Caixa Total';
+  if (balLabelEl) balLabelEl.textContent = 'Total em Caixa';
+
+  if (balSubEl) {
+    if (currentPeriod.preset === 'today') {
+      balSubEl.innerHTML = `Tinha em caixa: <strong>${fmt(metrics.initialBalance)}</strong> &bull; Movimento de hoje: <strong>${metrics.periodResult >= 0 ? '+' : ''}${fmt(metrics.periodResult)}</strong>`;
+    } else if (currentPeriod.preset === 'all') {
+      balSubEl.innerHTML = `Saldo acumulado do ciclo ativo de caixa`;
+    } else {
+      balSubEl.innerHTML = `Saldo inicial: <strong>${fmt(metrics.initialBalance)}</strong> &bull; Movimento no período: <strong>${metrics.periodResult >= 0 ? '+' : ''}${fmt(metrics.periodResult)}</strong>`;
     }
   }
 
   // Card 2: Entradas no Período
-  document.getElementById('card-entries').textContent = fmt(metrics.entriesSum);
-  document.getElementById('card-entries-sub').textContent = `${metrics.entriesCount} lançamento(s) no período`;
+  const entEl = document.getElementById('card-entries');
+  const entSubEl = document.getElementById('card-entries-sub');
+  const entPeriodEl = document.getElementById('card-entries-period');
+  const entLabelEl = document.getElementById('card-entries-label');
+
+  if (entEl) entEl.textContent = fmt(metrics.entriesSum);
+  if (entPeriodEl) entPeriodEl.textContent = currentPeriod.preset === 'today' ? 'Hoje' : 'Receitas';
+  if (entLabelEl) entLabelEl.textContent = currentPeriod.preset === 'today' ? 'Entradas de Hoje' : 'Total de Entradas';
+  if (entSubEl) {
+    entSubEl.textContent = `${metrics.entriesCount} lançamento(s) ${currentPeriod.preset === 'today' ? 'hoje' : 'no período'}`;
+  }
 
   // Card 3: Saídas no Período
-  document.getElementById('card-exits').textContent = fmt(metrics.exitsSum);
-  document.getElementById('card-exits-sub').textContent = `${metrics.exitsCount} lançamento(s) no período`;
+  const exitEl = document.getElementById('card-exits');
+  const exitSubEl = document.getElementById('card-exits-sub');
+  const exitPeriodEl = document.getElementById('card-exits-period');
+  const exitLabelEl = document.getElementById('card-exits-label');
 
-  // Card 4: Ajustes no Período
+  if (exitEl) exitEl.textContent = fmt(metrics.exitsSum);
+  if (exitPeriodEl) exitPeriodEl.textContent = currentPeriod.preset === 'today' ? 'Hoje' : 'Despesas';
+  if (exitLabelEl) exitLabelEl.textContent = currentPeriod.preset === 'today' ? 'Saídas de Hoje' : 'Total de Saídas';
+  if (exitSubEl) {
+    exitSubEl.textContent = `${metrics.exitsCount} lançamento(s) ${currentPeriod.preset === 'today' ? 'hoje' : 'no período'}`;
+  }
+
+  // Card 4: Resultado Líquido do Dia / Período
   const adjValEl = document.getElementById('card-adjustments');
   const adjSubEl = document.getElementById('card-adjustments-sub');
-  adjValEl.textContent = `${metrics.adjustmentsCount} ajuste(s)`;
-  if (metrics.adjustmentsCount > 0) {
-    adjValEl.className = 'card-value yellow';
-    adjSubEl.innerHTML = `Total: <strong>${metrics.adjustmentsSum >= 0 ? '+' : ''}${fmt(metrics.adjustmentsSum)}</strong>`;
-  } else {
-    adjValEl.className = 'card-value';
-    adjSubEl.textContent = 'Nenhuma divergência no período';
+  const resPeriodEl = document.getElementById('card-result-period');
+  const resLabelEl = document.getElementById('card-result-label');
+
+  if (resPeriodEl) resPeriodEl.textContent = currentPeriod.preset === 'today' ? 'Líquido de Hoje' : 'Líquido do Período';
+  if (resLabelEl) resLabelEl.textContent = currentPeriod.preset === 'today' ? 'Resultado de Hoje' : 'Resultado do Período';
+
+  if (adjValEl) {
+    adjValEl.textContent = `${metrics.periodResult >= 0 ? '+' : ''}${fmt(metrics.periodResult)}`;
+    adjValEl.className = 'card-value ' + (metrics.periodResult >= 0 ? 'green' : 'red');
+  }
+
+  if (adjSubEl) {
+    if (metrics.adjustmentsCount > 0) {
+      adjSubEl.innerHTML = `Entradas (-) Saídas &bull; <strong style="color:var(--yellow)">${metrics.adjustmentsCount} ajuste(s) (${fmt(metrics.adjustmentsSum)})</strong>`;
+    } else {
+      adjSubEl.innerHTML = `Entradas: <strong>+${fmt(metrics.entriesSum)}</strong> &bull; Saídas: <strong>-${fmt(metrics.exitsSum)}</strong>`;
+    }
   }
 }
 
@@ -2539,22 +2614,11 @@ function getLastClosingRecord() {
 }
 
 function openCloseCashModal() {
-  const lastCl = getLastClosingRecord();
-  const cutoffTime = new Date(lastCl.date || 0).getTime();
-  const openingBalance = parseFloat(lastCl.value) || 0;
-
-  // Active transactions are those after cutoffTime
-  const activeTx = transactions.filter(t => {
-    if (t.type === 'closing' || t.type === 'opening') return false;
-    const tTime = new Date(t.date || 0).getTime();
-    return tTime > cutoffTime;
-  });
-
-  const totalEntry = activeTx.filter(t => t.type === 'entry').reduce((s,t) => s + (parseFloat(t.value)||0), 0);
-  const totalExit  = activeTx.filter(t => t.type === 'exit').reduce((s,t)  => s + (parseFloat(t.value)||0), 0);
-  const totalAdj   = activeTx.filter(t => t.type === 'adjustment').reduce((s,t) => s + (parseFloat(t.value)||0), 0);
-
-  const expectedBalance = openingBalance + totalEntry - totalExit + totalAdj;
+  const metrics = calculatePeriodMetrics(currentPeriod.startDate, currentPeriod.endDate);
+  const expectedBalance = metrics.finalBalance;
+  const openingBalance = metrics.initialBalance;
+  const totalEntry = metrics.entriesSum;
+  const totalExit  = metrics.exitsSum;
 
   // Fill summary
   document.getElementById('ccs-opening-val').textContent  = fmt(openingBalance);
