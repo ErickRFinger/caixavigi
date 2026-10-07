@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Caixa VIGI — Sistema Financeiro e Conferência</title>
-  <meta name="description" content="Sistema de controle e conferência de caixa para Carol, Camili e Keithi." />
+  <meta name="description" content="Sistema de controle e conferência de caixa para Carol, Camili, Keithi e Ana." />
   <link rel="icon" type="image/png" href="vigi.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -153,17 +153,17 @@
     .login-logo p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
 
     .user-select {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;
     }
     .user-btn {
       background: rgba(255,255,255,0.04);
       border: 2px solid var(--border);
       border-radius: var(--radius);
-      padding: 12px 8px;
+      padding: 12px 4px;
       text-align: center;
       cursor: pointer;
       color: var(--text);
-      font-size: 0.82rem; font-weight: 600;
+      font-size: 0.8rem; font-weight: 600;
       transition: all 0.2s ease;
       display: flex; flex-direction: column; align-items: center; gap: 8px;
     }
@@ -604,6 +604,8 @@
     .user-chip.camili .chip-dot { background: #0ea5e9; }
     .user-chip.keithi { background: rgba(236,72,153,0.15); color: #f9a8d4; border: 1px solid rgba(236,72,153,0.3); }
     .user-chip.keithi .chip-dot { background: #ec4899; }
+    .user-chip.ana    { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+    .user-chip.ana    .chip-dot { background: #10b981; }
 
     /* ===========================
        MODALS
@@ -852,6 +854,10 @@
         <button class="user-btn" id="u-keithi" onclick="selectUser('Keithi')">
           <div class="avatar"><img src="KEITHI.jpeg" alt="Keithi" onerror="this.style.display='none';this.parentNode.textContent='👩‍🎨'" /></div>
           Keithi
+        </button>
+        <button class="user-btn" id="u-ana" onclick="selectUser('Ana')">
+          <div class="avatar"><img src="ANA.jpeg" alt="Ana" style="object-position: center 25%;" onerror="this.style.display='none';this.parentNode.textContent='👩‍💼'" /></div>
+          Ana
         </button>
       </div>
     </div>
@@ -1385,6 +1391,7 @@ const USERS = {
   'Carol':  { pass: 'clic3369', emoji: 'C' },
   'Camili': { pass: 'clic3369', emoji: 'K' },
   'Keithi': { pass: 'clic3369', emoji: 'K' },
+  'Ana':    { pass: 'clic3369', emoji: 'A' },
 };
 const SESSION_KEY = 'caixavigi_session';
 
@@ -1487,8 +1494,12 @@ function updateHeaderDate() {
 =========================== */
 function selectUser(name) {
   selectedUser = name;
-  ['carol','camili','keithi'].forEach(u => document.getElementById('u-'+u).classList.remove('selected'));
-  document.getElementById('u-'+name.toLowerCase()).classList.add('selected');
+  ['carol','camili','keithi','ana'].forEach(u => {
+    const el = document.getElementById('u-'+u);
+    if (el) el.classList.remove('selected');
+  });
+  const selEl = document.getElementById('u-'+name.toLowerCase());
+  if (selEl) selEl.classList.add('selected');
   document.getElementById('login-password').focus();
   document.getElementById('login-error').classList.remove('visible');
 }
@@ -1524,7 +1535,10 @@ function doLogout() {
   selectedUser = null;
   localStorage.removeItem(SESSION_KEY);
   document.getElementById('login-password').value = '';
-  ['carol','camili','keithi'].forEach(u => document.getElementById('u-'+u).classList.remove('selected'));
+  ['carol','camili','keithi','ana'].forEach(u => {
+    const el = document.getElementById('u-'+u);
+    if (el) el.classList.remove('selected');
+  });
   document.getElementById('login-error').classList.remove('visible');
   document.getElementById('app-screen').classList.remove('active');
   document.getElementById('login-screen').classList.add('active');
@@ -1536,11 +1550,12 @@ function showApp() {
 
   // Header user info
   document.getElementById('header-username').textContent = currentUser;
-  const photoMap = { Carol: 'CAROL.jpeg', Camili: 'CAMILI.jpeg', Keithi: 'KEITHI.jpeg' };
+  const photoMap = { Carol: 'CAROL.jpeg', Camili: 'CAMILI.jpeg', Keithi: 'KEITHI.jpeg', Ana: 'ANA.jpeg' };
   const photo = photoMap[currentUser];
   const avatarEl = document.getElementById('header-avatar');
   if (photo) {
-    avatarEl.innerHTML = `<img src="${photo}" alt="${currentUser}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentNode.textContent='${currentUser[0].toUpperCase()}'" />`;
+    const objPos = currentUser === 'Ana' ? 'object-position:center 25%;' : '';
+    avatarEl.innerHTML = `<img src="${photo}" alt="${currentUser}" style="width:100%;height:100%;object-fit:cover;display:block;${objPos}" onerror="this.parentNode.textContent='${currentUser[0].toUpperCase()}'" />`;
   } else {
     avatarEl.textContent = currentUser[0].toUpperCase();
   }
@@ -2114,14 +2129,15 @@ function renderHistory() {
     return;
   }
 
-  const photoMap = { Carol: 'CAROL.jpeg', Camili: 'CAMILI.jpeg', Keithi: 'KEITHI.jpeg' };
+  const photoMap = { Carol: 'CAROL.jpeg', Camili: 'CAMILI.jpeg', Keithi: 'KEITHI.jpeg', Ana: 'ANA.jpeg' };
 
   list.innerHTML = filtered.map(t => {
     const userKey     = t.user ? t.user.toLowerCase() : 'carol';
     const userInitial = t.user ? t.user[0].toUpperCase() : '?';
     const userPhoto   = photoMap[t.user] || null;
+    const objPos      = t.user === 'Ana' ? 'object-position:center 25%;' : '';
     const chipInner   = userPhoto
-      ? `<img src="${userPhoto}" alt="${escHtml(t.user)}" class="chip-photo" onerror="this.outerHTML='<span class=chip-dot>${userInitial}</span>'" />`
+      ? `<img src="${userPhoto}" alt="${escHtml(t.user)}" class="chip-photo" style="${objPos}" onerror="this.outerHTML='<span class=chip-dot>${userInitial}</span>'" />`
       : `<span class="chip-dot">${userInitial}</span>`;
 
     // 1. INÍCIO DO CAIXA

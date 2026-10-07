@@ -8,7 +8,7 @@
 1. Abra o arquivo "index.html" no navegador
    (duplo clique no arquivo)
 
-2. Selecione sua conta (Carol, Camili ou Keithi)
+2. Selecione sua conta (Carol, Camili, Keithi ou Ana)
 
 3. Digite a senha padrão: clic3369
 
@@ -54,6 +54,7 @@
   Carol   →  Senha: clic3369
   Camili  →  Senha: clic3369
   Keithi  →  Senha: clic3369
+  Ana     →  Senha: clic3369
 
 💾 DADOS & SINCRONIZAÇÃO
 ─────────────────────────────────────────────────
